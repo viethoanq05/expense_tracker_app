@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:expense_tracker_app/models/transaction_record.dart';
+import 'package:expense_tracker_app/services/repository_registry.dart';
 import 'package:flutter/material.dart';
 
 enum TimeFilter { all, last7Days, last30Days, thisMonth }
@@ -19,105 +20,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
   AmountFilter _selectedAmountFilter = AmountFilter.all;
   String _selectedCategory = _allCategories;
   String _query = '';
+  bool _isLoading = true;
+  String? _loadError;
+  List<TransactionRecord> _allTransactions = const [];
 
   static const String _allCategories = 'All categories';
 
-  final List<TransactionRecord> _seedTransactions = [
-    TransactionRecord(
-      id: 'tx_001',
-      title: 'Luong thang 3',
-      amount: 18500000,
-      date: DateTime(2026, 3, 1),
-      category: 'Salary',
-      type: TransactionType.income,
-      note: 'Cong ty ABC',
-    ),
-    TransactionRecord(
-      id: 'tx_002',
-      title: 'An trua van phong',
-      amount: 85000,
-      date: DateTime(2026, 3, 12),
-      category: 'Food',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_003',
-      title: 'Cafe hop nhom',
-      amount: 58000,
-      date: DateTime(2026, 3, 11),
-      category: 'Food',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_004',
-      title: 'Di chuyen grab',
-      amount: 124000,
-      date: DateTime(2026, 3, 10),
-      category: 'Transport',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_005',
-      title: 'Mua do gia dung',
-      amount: 332000,
-      date: DateTime(2026, 3, 9),
-      category: 'Shopping',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_006',
-      title: 'Freelance sprint UI',
-      amount: 2100000,
-      date: DateTime(2026, 3, 7),
-      category: 'Freelance',
-      type: TransactionType.income,
-    ),
-    TransactionRecord(
-      id: 'tx_007',
-      title: 'Tien nha',
-      amount: 3500000,
-      date: DateTime(2026, 3, 5),
-      category: 'Housing',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_008',
-      title: 'Netflix',
-      amount: 260000,
-      date: DateTime(2026, 3, 4),
-      category: 'Subscription',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_009',
-      title: 'Hoan tien dat xe',
-      amount: 54000,
-      date: DateTime(2026, 2, 28),
-      category: 'Refund',
-      type: TransactionType.income,
-    ),
-    TransactionRecord(
-      id: 'tx_010',
-      title: 'Sieu thi cuoi tuan',
-      amount: 675000,
-      date: DateTime(2026, 2, 26),
-      category: 'Groceries',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_011',
-      title: 'Hoc phi online',
-      amount: 499000,
-      date: DateTime(2026, 2, 21),
-      category: 'Education',
-      type: TransactionType.expense,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  Future<void> _loadTransactions() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+
+    try {
+      await RepositoryRegistry.seedDemoDataIfNeeded();
+      final transactions = await RepositoryRegistry.expenseRepository
+          .getTransactions();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _allTransactions = transactions;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+        _loadError = error.toString();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final monthlyTransactions = _transactionsInMonth(now, _seedTransactions);
+    final monthlyTransactions = _transactionsInMonth(now, _allTransactions);
     final monthlyIncome = _sumByType(
       monthlyTransactions,
       TransactionType.income,
@@ -128,9 +74,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     final monthlyBalance = monthlyIncome - monthlyExpense;
 
-    final filtered = _applySearchAndTimeFilter(_seedTransactions, now);
+    final filtered = _applySearchAndTimeFilter(_allTransactions, now);
     final recentTransactions = filtered.take(5).toList();
-    final availableCategories = _availableCategories(_seedTransactions);
+    final availableCategories = _availableCategories(_allTransactions);
 
     return SafeArea(
       child: LayoutBuilder(
@@ -154,6 +100,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onOpenSearch: () => _openSearchPage(availableCategories),
                     ),
                     const SizedBox(height: 16),
+                    if (_isLoading) ...[
+                      const _LoadingCard(),
+                      const SizedBox(height: 16),
+                    ] else if (_loadError != null) ...[
+                      _ErrorCard(
+                        error: _loadError!,
+                        onRetry: _loadTransactions,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     isWide
                         ? Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,7 +224,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           initialCategory: _selectedCategory,
           categories: categories,
           allCategoriesLabel: _allCategories,
-          sourceTransactions: _seedTransactions,
+          sourceTransactions: _allTransactions,
         ),
       ),
     );
@@ -431,10 +387,10 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
       category: _category,
     );
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (_, _) {
         _closeWithCriteria();
-        return false;
       },
       child: Scaffold(
         appBar: AppBar(
@@ -792,6 +748,75 @@ class _FilterInfoChip extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             TextSpan(text: value),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Loading transactions from Firestore...',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.error, required this.onRetry});
+
+  final String error;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Cannot load Firestore data.',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              error,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
           ],
         ),
       ),

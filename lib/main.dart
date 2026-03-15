@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:expense_tracker_app/screens/app_shell_screen.dart';
+import 'package:expense_tracker_app/services/firebase_bootstrap.dart';
 import 'package:expense_tracker_app/theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await FirebaseBootstrap.initialize();
   runApp(const ExpenseTrackerApp());
 }
 
