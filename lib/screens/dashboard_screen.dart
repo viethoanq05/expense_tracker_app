@@ -1,12 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:expense_tracker_app/models/expense_filter.dart';
 import 'package:expense_tracker_app/models/transaction_record.dart';
 import 'package:expense_tracker_app/services/repository_registry.dart';
 import 'package:flutter/material.dart';
-
-enum TimeFilter { all, last7Days, last30Days, thisMonth }
-
-enum AmountFilter { all, under200k, from200kTo1m, over1m }
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -19,15 +16,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const double _tabletBreakpoint = 760;
   static const double _desktopBreakpoint = 1100;
 
-  TimeFilter _selectedTimeFilter = TimeFilter.all;
-  AmountFilter _selectedAmountFilter = AmountFilter.all;
-  String _selectedCategory = _allCategories;
-  String _query = '';
   bool _isLoading = true;
   String? _loadError;
   List<TransactionRecord> _allTransactions = const [];
-
-  static const String _allCategories = 'All categories';
 
   @override
   void initState() {
@@ -45,9 +36,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await RepositoryRegistry.seedDemoDataIfNeeded();
       final transactions = await RepositoryRegistry.expenseRepository
           .getTransactions();
+
       if (!mounted) {
         return;
       }
+
       setState(() {
         _allTransactions = transactions;
         _isLoading = false;
@@ -56,6 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) {
         return;
       }
+
       setState(() {
         _isLoading = false;
         _loadError = error.toString();
@@ -76,9 +70,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       TransactionType.expense,
     );
     final monthlyBalance = monthlyIncome - monthlyExpense;
-
-    final filtered = _applySearchAndTimeFilter(_allTransactions, now);
-    final recentTransactions = filtered.take(5).toList();
+    final recentTransactions = _latestTransactions(_allTransactions);
     final availableCategories = _availableCategories(_allTransactions);
 
     return SafeArea(
@@ -185,76 +177,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .toList(growable: false);
   }
 
-  List<TransactionRecord> _applySearchAndTimeFilter(
-    List<TransactionRecord> source,
-    DateTime now,
-  ) {
+  List<TransactionRecord> _latestTransactions(List<TransactionRecord> source) {
     final sorted = [...source]..sort((a, b) => b.date.compareTo(a.date));
-
-    return sorted
-        .where((tx) {
-          final matchTime = switch (_selectedTimeFilter) {
-            TimeFilter.all => true,
-            TimeFilter.last7Days => tx.date.isAfter(
-              now.subtract(const Duration(days: 7)),
-            ),
-            TimeFilter.last30Days => tx.date.isAfter(
-              now.subtract(const Duration(days: 30)),
-            ),
-            TimeFilter.thisMonth =>
-              tx.date.month == now.month && tx.date.year == now.year,
-          };
-
-          final amount = tx.amount.abs();
-          final matchAmount = switch (_selectedAmountFilter) {
-            AmountFilter.all => true,
-            AmountFilter.under200k => amount < 200000,
-            AmountFilter.from200kTo1m => amount >= 200000 && amount <= 1000000,
-            AmountFilter.over1m => amount > 1000000,
-          };
-
-          final matchCategory =
-              _selectedCategory == _allCategories ||
-              tx.category == _selectedCategory;
-
-          final keyword = _query.toLowerCase();
-          final searchable = '${tx.title} ${tx.category} ${tx.note ?? ''}'
-              .toLowerCase();
-          final matchQuery = keyword.isEmpty || searchable.contains(keyword);
-
-          return matchTime && matchAmount && matchCategory && matchQuery;
-        })
-        .toList(growable: false);
+    return sorted.take(5).toList(growable: false);
   }
 
   List<String> _availableCategories(List<TransactionRecord> source) {
     final categories = source.map((tx) => tx.category).toSet().toList()..sort();
-    return [_allCategories, ...categories];
+    return [ExpenseFilter.allCategories, ...categories];
   }
 
   Future<void> _openSearchPage(List<String> categories) async {
-    final criteria = await Navigator.of(context).push<_SearchCriteria>(
+    await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => _DashboardSearchPage(
-          initialQuery: _query,
-          initialTimeFilter: _selectedTimeFilter,
-          initialAmountFilter: _selectedAmountFilter,
-          initialCategory: _selectedCategory,
+          initialFilter: const ExpenseFilter(),
           categories: categories,
-          allCategoriesLabel: _allCategories,
+          allCategoriesLabel: ExpenseFilter.allCategories,
           sourceTransactions: _allTransactions,
         ),
       ),
     );
-
-    if (criteria != null) {
-      setState(() {
-        _query = criteria.query;
-        _selectedTimeFilter = criteria.timeFilter;
-        _selectedAmountFilter = criteria.amountFilter;
-        _selectedCategory = criteria.category;
-      });
-    }
   }
 
   double _sumByType(
@@ -308,7 +251,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'TH5 - Nhóm 12',
+                'TH5 - Nhom 12',
                 style:
                     (compact ? textTheme.titleLarge : textTheme.headlineSmall)
                         ?.copyWith(fontWeight: FontWeight.w700),
@@ -341,35 +284,15 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _SearchCriteria {
-  const _SearchCriteria({
-    required this.query,
-    required this.timeFilter,
-    required this.amountFilter,
-    required this.category,
-  });
-
-  final String query;
-  final TimeFilter timeFilter;
-  final AmountFilter amountFilter;
-  final String category;
-}
-
 class _DashboardSearchPage extends StatefulWidget {
   const _DashboardSearchPage({
-    required this.initialQuery,
-    required this.initialTimeFilter,
-    required this.initialAmountFilter,
-    required this.initialCategory,
+    required this.initialFilter,
     required this.categories,
     required this.allCategoriesLabel,
     required this.sourceTransactions,
   });
 
-  final String initialQuery;
-  final TimeFilter initialTimeFilter;
-  final AmountFilter initialAmountFilter;
-  final String initialCategory;
+  final ExpenseFilter initialFilter;
   final List<String> categories;
   final String allCategoriesLabel;
   final List<TransactionRecord> sourceTransactions;
@@ -389,11 +312,11 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initialQuery);
-    _query = widget.initialQuery;
-    _timeFilter = widget.initialTimeFilter;
-    _amountFilter = widget.initialAmountFilter;
-    _category = widget.initialCategory;
+    _controller = TextEditingController(text: widget.initialFilter.keyword);
+    _query = widget.initialFilter.keyword;
+    _timeFilter = widget.initialFilter.timeFilter;
+    _amountFilter = widget.initialFilter.amountFilter;
+    _category = widget.initialFilter.category;
   }
 
   @override
@@ -404,25 +327,29 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final preview = _applyFilters(
-      query: _query,
-      timeFilter: _timeFilter,
-      amountFilter: _amountFilter,
-      category: _category,
+    final preview = _applyFilter(
+      widget.sourceTransactions,
+      ExpenseFilter(
+        keyword: _query,
+        timeFilter: _timeFilter,
+        amountFilter: _amountFilter,
+        category: _category,
+      ),
+      DateTime.now(),
     );
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
-          _closeWithCriteria();
+          _closePage();
         }
       },
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
           leading: IconButton(
-            onPressed: _closeWithCriteria,
+            onPressed: _closePage,
             icon: const Icon(Icons.arrow_back_rounded),
             tooltip: 'Back',
           ),
@@ -472,8 +399,8 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
                     runSpacing: 8,
                     children: [
                       _FilterInfoChip(
-                        label: _amountLabel(_timeFilter, _amountFilter).$1,
-                        value: _amountLabel(_timeFilter, _amountFilter).$2,
+                        label: _amountLabel(_amountFilter).$1,
+                        value: _amountLabel(_amountFilter).$2,
                       ),
                       _FilterInfoChip(
                         label: 'Time',
@@ -530,19 +457,12 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
     });
   }
 
-  void _closeWithCriteria() {
+  void _closePage() {
     if (_isClosing) {
       return;
     }
     _isClosing = true;
-    Navigator.of(context).pop(
-      _SearchCriteria(
-        query: _query,
-        timeFilter: _timeFilter,
-        amountFilter: _amountFilter,
-        category: _category,
-      ),
-    );
+    Navigator.of(context).pop();
   }
 
   Future<void> _openFilterSheet() async {
@@ -700,61 +620,17 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
     );
   }
 
-  List<TransactionRecord> _applyFilters({
-    required String query,
-    required TimeFilter timeFilter,
-    required AmountFilter amountFilter,
-    required String category,
-  }) {
-    final now = DateTime.now();
-    final sorted = [...widget.sourceTransactions]
-      ..sort((a, b) => b.date.compareTo(a.date));
-
-    return sorted
-        .where((tx) {
-          final matchTime = switch (timeFilter) {
-            TimeFilter.all => true,
-            TimeFilter.last7Days => tx.date.isAfter(
-              now.subtract(const Duration(days: 7)),
-            ),
-            TimeFilter.last30Days => tx.date.isAfter(
-              now.subtract(const Duration(days: 30)),
-            ),
-            TimeFilter.thisMonth =>
-              tx.date.month == now.month && tx.date.year == now.year,
-          };
-
-          final amount = tx.amount.abs();
-          final matchAmount = switch (amountFilter) {
-            AmountFilter.all => true,
-            AmountFilter.under200k => amount < 200000,
-            AmountFilter.from200kTo1m => amount >= 200000 && amount <= 1000000,
-            AmountFilter.over1m => amount > 1000000,
-          };
-
-          final matchCategory =
-              category == widget.allCategoriesLabel || tx.category == category;
-
-          final keyword = query.toLowerCase();
-          final searchable = '${tx.title} ${tx.category} ${tx.note ?? ''}'
-              .toLowerCase();
-          final matchQuery = keyword.isEmpty || searchable.contains(keyword);
-
-          return matchTime && matchAmount && matchCategory && matchQuery;
-        })
-        .toList(growable: false);
-  }
-
   String _timeLabel(TimeFilter filter) {
     return switch (filter) {
       TimeFilter.all => 'All time',
       TimeFilter.last7Days => 'Last 7 days',
       TimeFilter.last30Days => 'Last 30 days',
       TimeFilter.thisMonth => 'This month',
+      TimeFilter.custom => 'Custom range',
     };
   }
 
-  (String, String) _amountLabel(TimeFilter _, AmountFilter filter) {
+  (String, String) _amountLabel(AmountFilter filter) {
     return switch (filter) {
       AmountFilter.all => ('Amount', 'All amounts'),
       AmountFilter.under200k => ('Amount', 'Under 200K'),
@@ -762,6 +638,15 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
       AmountFilter.over1m => ('Amount', 'Over 1M'),
     };
   }
+}
+
+List<TransactionRecord> _applyFilter(
+  List<TransactionRecord> source,
+  ExpenseFilter filter,
+  DateTime now,
+) {
+  final sorted = [...source]..sort((a, b) => b.date.compareTo(a.date));
+  return sorted.where((tx) => filter.matches(tx, now)).toList(growable: false);
 }
 
 class _FilterInfoChip extends StatelessWidget {
@@ -948,36 +833,35 @@ class _SummaryPanel extends StatelessWidget {
   }
 
   Widget _smallMetric(String label, String value, Color bg, Color fg) {
-    return Builder(
-      builder: (context) {
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(14),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: fg,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelMedium?.copyWith(color: fg),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: fg,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: TextStyle(
+              color: fg,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }
@@ -1100,7 +984,7 @@ class _RecentTransactionsCard extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              'Showing up to 5 latest records',
+              'Showing latest 5 records',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -1111,7 +995,7 @@ class _RecentTransactionsCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(0, 18, 0, 22),
                 child: Center(
                   child: Text(
-                    'No transaction found with current filter.',
+                    'No transaction data available.',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
