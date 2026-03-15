@@ -1,5 +1,6 @@
 import 'package:expense_tracker_app/controllers/navigation_controller.dart';
 import 'package:expense_tracker_app/screens/dashboard_screen.dart';
+import 'package:expense_tracker_app/screens/statistics_screen.dart';
 import 'package:flutter/material.dart';
 
 class AppShellScreen extends StatefulWidget {
@@ -16,10 +17,11 @@ class _AppShellScreenState extends State<AppShellScreen> {
   late final NavigationController _navigationController;
 
   final List<Widget> _tabs = const [
-    DashboardScreen(),
-    _PlaceholderTab(title: 'Transactions'),
-    _PlaceholderTab(title: 'Budget'),
-    _PlaceholderTab(title: 'Settings'),
+     DashboardScreen(),
+     _PlaceholderTab(title: 'Transactions'),
+     StatisticsScreen(),
+     _PlaceholderTab(title: 'Budget'),
+     _PlaceholderTab(title: 'Settings'),
   ];
 
   @override

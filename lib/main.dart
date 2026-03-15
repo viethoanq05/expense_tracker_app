@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:expense_tracker_app/screens/app_shell_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:expense_tracker_app/providers/expense_provider.dart';
+import 'package:expense_tracker_app/screens/statistics_screen.dart';
 import 'package:expense_tracker_app/services/firebase_bootstrap.dart';
 import 'package:expense_tracker_app/theme/app_theme.dart';
 
@@ -14,11 +17,18 @@ class ExpenseTrackerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Expense Tracker',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      home: const AppShellScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => ExpenseProvider(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Expense Tracker',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        home: const AppShellScreen(),
+      ),
     );
   }
 }
