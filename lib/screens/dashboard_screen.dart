@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:expense_tracker_app/models/expense_filter.dart';
 import 'package:expense_tracker_app/models/transaction_record.dart';
+import 'package:expense_tracker_app/screens/transaction_detail_sheet.dart';
 import 'package:expense_tracker_app/services/repository_registry.dart';
 import 'package:flutter/material.dart';
 
@@ -1022,6 +1023,19 @@ class _TransactionTile extends StatelessWidget {
         : const Color(0xFFB91C1C);
 
     return ListTile(
+      onTap: () {
+        showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (_) => TransactionDetailSheet(
+            transactionId: tx.id,
+            onDataChanged: () {
+              // Reload functionality could go here if needed later
+            },
+          ),
+        );
+      },
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
         backgroundColor: isIncome

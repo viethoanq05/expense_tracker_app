@@ -1,5 +1,7 @@
 import 'package:expense_tracker_app/controllers/navigation_controller.dart';
+import 'package:expense_tracker_app/screens/add_transaction_screen.dart';
 import 'package:expense_tracker_app/screens/dashboard_screen.dart';
+import 'package:expense_tracker_app/screens/transactions_screen.dart';
 import 'package:flutter/material.dart';
 
 class AppShellScreen extends StatefulWidget {
@@ -17,7 +19,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
 
   final List<Widget> _tabs = const [
     DashboardScreen(),
-    _PlaceholderTab(title: 'Transactions'),
+    TransactionsScreen(),
     _PlaceholderTab(title: 'Budget'),
     _PlaceholderTab(title: 'Settings'),
   ];
@@ -62,8 +64,15 @@ class _AppShellScreenState extends State<AppShellScreen> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
-        // Reserved for the Add Transaction flow owned by another teammate.
-        onPressed: () {},
+        onPressed: () async {
+          final added = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
+          );
+          if (added == true && mounted) {
+            // Add any top-level refresh if necessary,
+            // though Dashboard and Transactions fetch on init.
+          }
+        },
         tooltip: 'Add transaction',
         child: const Icon(Icons.add_rounded),
       ),
@@ -135,8 +144,14 @@ class _AppShellScreenState extends State<AppShellScreen> {
   Scaffold _buildWideScaffold({required bool extendedRail}) {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        // Reserved for the Add Transaction flow owned by another teammate.
-        onPressed: () {},
+        onPressed: () async {
+          final added = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
+          );
+          if (added == true && mounted) {
+            // refresh
+          }
+        },
         icon: const Icon(Icons.add_rounded),
         label: const Text('Add'),
       ),
