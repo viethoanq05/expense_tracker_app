@@ -10,6 +10,9 @@ class AppShellScreen extends StatefulWidget {
 }
 
 class _AppShellScreenState extends State<AppShellScreen> {
+  static const double _tabletBreakpoint = 720;
+  static const double _desktopBreakpoint = 1100;
+
   late final NavigationController _navigationController;
 
   final List<Widget> _tabs = const [
@@ -38,9 +41,11 @@ class _AppShellScreenState extends State<AppShellScreen> {
       builder: (context, _) {
         return LayoutBuilder(
           builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 700;
-            if (isWide) {
-              return _buildWideScaffold();
+            final width = constraints.maxWidth;
+            if (width >= _tabletBreakpoint) {
+              return _buildWideScaffold(
+                extendedRail: width >= _desktopBreakpoint,
+              );
             }
             return _buildMobileScaffold();
           },
@@ -65,51 +70,69 @@ class _AppShellScreenState extends State<AppShellScreen> {
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 62,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavTabItem(
-                  icon: Icons.dashboard_outlined,
-                  selectedIcon: Icons.dashboard_rounded,
-                  label: 'Dashboard',
-                  selected: _navigationController.currentIndex == 0,
-                  onTap: () => _navigationController.changeTab(0),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final showLabels = constraints.maxWidth >= 390;
+            final centerGap = showLabels ? 52.0 : 40.0;
+
+            return SafeArea(
+              top: false,
+              child: SizedBox(
+                height: showLabels ? 62 : 54,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _NavTabItem(
+                        icon: Icons.dashboard_outlined,
+                        selectedIcon: Icons.dashboard_rounded,
+                        label: 'Dashboard',
+                        selected: _navigationController.currentIndex == 0,
+                        onTap: () => _navigationController.changeTab(0),
+                        showLabel: showLabels,
+                      ),
+                    ),
+                    Expanded(
+                      child: _NavTabItem(
+                        icon: Icons.receipt_long_outlined,
+                        selectedIcon: Icons.receipt_long,
+                        label: 'Transactions',
+                        selected: _navigationController.currentIndex == 1,
+                        onTap: () => _navigationController.changeTab(1),
+                        showLabel: showLabels,
+                      ),
+                    ),
+                    SizedBox(width: centerGap),
+                    Expanded(
+                      child: _NavTabItem(
+                        icon: Icons.pie_chart_outline,
+                        selectedIcon: Icons.pie_chart,
+                        label: 'Budget',
+                        selected: _navigationController.currentIndex == 2,
+                        onTap: () => _navigationController.changeTab(2),
+                        showLabel: showLabels,
+                      ),
+                    ),
+                    Expanded(
+                      child: _NavTabItem(
+                        icon: Icons.settings_outlined,
+                        selectedIcon: Icons.settings,
+                        label: 'Settings',
+                        selected: _navigationController.currentIndex == 3,
+                        onTap: () => _navigationController.changeTab(3),
+                        showLabel: showLabels,
+                      ),
+                    ),
+                  ],
                 ),
-                _NavTabItem(
-                  icon: Icons.receipt_long_outlined,
-                  selectedIcon: Icons.receipt_long,
-                  label: 'Transactions',
-                  selected: _navigationController.currentIndex == 1,
-                  onTap: () => _navigationController.changeTab(1),
-                ),
-                const SizedBox(width: 44),
-                _NavTabItem(
-                  icon: Icons.pie_chart_outline,
-                  selectedIcon: Icons.pie_chart,
-                  label: 'Budget',
-                  selected: _navigationController.currentIndex == 2,
-                  onTap: () => _navigationController.changeTab(2),
-                ),
-                _NavTabItem(
-                  icon: Icons.settings_outlined,
-                  selectedIcon: Icons.settings,
-                  label: 'Settings',
-                  selected: _navigationController.currentIndex == 3,
-                  onTap: () => _navigationController.changeTab(3),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Scaffold _buildWideScaffold() {
+  Scaffold _buildWideScaffold({required bool extendedRail}) {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         // Reserved for the Add Transaction flow owned by another teammate.
@@ -120,9 +143,13 @@ class _AppShellScreenState extends State<AppShellScreen> {
       body: Row(
         children: [
           NavigationRail(
+            extended: extendedRail,
+            minExtendedWidth: 220,
             selectedIndex: _navigationController.currentIndex,
             onDestinationSelected: _navigationController.changeTab,
-            labelType: NavigationRailLabelType.all,
+            labelType: extendedRail
+                ? NavigationRailLabelType.none
+                : NavigationRailLabelType.all,
             destinations: const [
               NavigationRailDestination(
                 icon: Icon(Icons.dashboard_outlined),
@@ -166,6 +193,7 @@ class _NavTabItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    required this.showLabel,
   });
 
   final IconData icon;
@@ -173,6 +201,7 @@ class _NavTabItem extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -184,22 +213,35 @@ class _NavTabItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: showLabel ? 6 : 2,
+          vertical: showLabel ? 6 : 4,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               selected ? selectedIcon : icon,
               color: selected ? activeColor : inactiveColor,
             ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: selected ? activeColor : inactiveColor,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            if (showLabel) ...[
+              const SizedBox(height: 3),
+              SizedBox(
+                width: 60,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: selected ? activeColor : inactiveColor,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

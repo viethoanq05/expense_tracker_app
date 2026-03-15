@@ -16,6 +16,9 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  static const double _tabletBreakpoint = 760;
+  static const double _desktopBreakpoint = 1100;
+
   TimeFilter _selectedTimeFilter = TimeFilter.all;
   AmountFilter _selectedAmountFilter = AmountFilter.all;
   String _selectedCategory = _allCategories;
@@ -81,8 +84,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 900;
-          final horizontalPadding = isWide ? 28.0 : 16.0;
+          final width = constraints.maxWidth;
+          final isTablet = width >= _tabletBreakpoint;
+          final isDesktop = width >= _desktopBreakpoint;
+          final horizontalPadding = isDesktop ? 32.0 : (isTablet ? 24.0 : 16.0);
+          final maxContentWidth = isDesktop ? 1180.0 : 900.0;
 
           return CustomScrollView(
             slivers: [
@@ -93,62 +99,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   horizontalPadding,
                   24,
                 ),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    _Header(
-                      monthLabel: _monthLabel(now),
-                      onOpenSearch: () => _openSearchPage(availableCategories),
-                    ),
-                    const SizedBox(height: 16),
-                    if (_isLoading) ...[
-                      const _LoadingCard(),
-                      const SizedBox(height: 16),
-                    ] else if (_loadError != null) ...[
-                      _ErrorCard(
-                        error: _loadError!,
-                        onRetry: _loadTransactions,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    isWide
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 5,
-                                child: _SummaryPanel(
-                                  monthlyBalance: monthlyBalance,
-                                  monthlyExpense: monthlyExpense,
-                                  monthlyIncome: monthlyIncome,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                flex: 4,
-                                child: _MonthlyReportCard(
-                                  monthlyTransactions: monthlyTransactions,
-                                  monthlyExpense: monthlyExpense,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            children: [
-                              _SummaryPanel(
-                                monthlyBalance: monthlyBalance,
-                                monthlyExpense: monthlyExpense,
-                                monthlyIncome: monthlyIncome,
-                              ),
-                              const SizedBox(height: 12),
-                              _MonthlyReportCard(
-                                monthlyTransactions: monthlyTransactions,
-                                monthlyExpense: monthlyExpense,
-                              ),
-                            ],
+                sliver: SliverToBoxAdapter(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: maxContentWidth),
+                      child: Column(
+                        children: [
+                          _Header(
+                            monthLabel: _monthLabel(now),
+                            onOpenSearch: () =>
+                                _openSearchPage(availableCategories),
+                            compact: !isTablet,
                           ),
-                    const SizedBox(height: 18),
-                    _RecentTransactionsCard(transactions: recentTransactions),
-                  ]),
+                          const SizedBox(height: 16),
+                          if (_isLoading) ...[
+                            const _LoadingCard(),
+                            const SizedBox(height: 16),
+                          ] else if (_loadError != null) ...[
+                            _ErrorCard(
+                              error: _loadError!,
+                              onRetry: _loadTransactions,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          isDesktop
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 5,
+                                      child: _SummaryPanel(
+                                        monthlyBalance: monthlyBalance,
+                                        monthlyExpense: monthlyExpense,
+                                        monthlyIncome: monthlyIncome,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 20),
+                                    Expanded(
+                                      flex: 4,
+                                      child: _MonthlyReportCard(
+                                        monthlyTransactions:
+                                            monthlyTransactions,
+                                        monthlyExpense: monthlyExpense,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    _SummaryPanel(
+                                      monthlyBalance: monthlyBalance,
+                                      monthlyExpense: monthlyExpense,
+                                      monthlyIncome: monthlyIncome,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _MonthlyReportCard(
+                                      monthlyTransactions: monthlyTransactions,
+                                      monthlyExpense: monthlyExpense,
+                                    ),
+                                  ],
+                                ),
+                          const SizedBox(height: 18),
+                          _RecentTransactionsCard(
+                            transactions: recentTransactions,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -269,10 +287,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.monthLabel, required this.onOpenSearch});
+  const _Header({
+    required this.monthLabel,
+    required this.onOpenSearch,
+    required this.compact,
+  });
 
   final String monthLabel;
   final VoidCallback onOpenSearch;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -286,9 +309,9 @@ class _Header extends StatelessWidget {
             children: [
               Text(
                 'TH5 - Nhóm 12',
-                style: textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style:
+                    (compact ? textTheme.titleLarge : textTheme.headlineSmall)
+                        ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
               Text(
@@ -361,6 +384,7 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
   late AmountFilter _amountFilter;
   late String _category;
   String _query = '';
+  bool _isClosing = false;
 
   @override
   void initState() {
@@ -389,8 +413,10 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (_, _) {
-        _closeWithCriteria();
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _closeWithCriteria();
+        }
       },
       child: Scaffold(
         appBar: AppBar(
@@ -427,58 +453,67 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
               tooltip: 'Open filters',
               icon: const Icon(Icons.tune_rounded),
             ),
-            TextButton(onPressed: _reset, child: const Text('Reset')),
+            IconButton(
+              onPressed: _reset,
+              tooltip: 'Reset filters',
+              icon: const Icon(Icons.refresh_rounded),
+            ),
           ],
         ),
         body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 children: [
-                  _FilterInfoChip(
-                    label: _amountLabel(_timeFilter, _amountFilter).$1,
-                    value: _amountLabel(_timeFilter, _amountFilter).$2,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _FilterInfoChip(
+                        label: _amountLabel(_timeFilter, _amountFilter).$1,
+                        value: _amountLabel(_timeFilter, _amountFilter).$2,
+                      ),
+                      _FilterInfoChip(
+                        label: 'Time',
+                        value: _timeLabel(_timeFilter),
+                      ),
+                      _FilterInfoChip(label: 'Category', value: _category),
+                    ],
                   ),
-                  _FilterInfoChip(
-                    label: 'Time',
-                    value: _timeLabel(_timeFilter),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Matched transactions: ${preview.length}',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  _FilterInfoChip(label: 'Category', value: _category),
+                  const SizedBox(height: 8),
+                  if (preview.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'No transactions found with current filters.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    )
+                  else
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+                        child: Column(
+                          children: preview
+                              .map((tx) => _TransactionTile(tx: tx))
+                              .toList(growable: false),
+                        ),
+                      ),
+                    ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Matched transactions: ${preview.length}',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              if (preview.isEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'No transactions found with current filters.',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                )
-              else
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
-                    child: Column(
-                      children: preview
-                          .map((tx) => _TransactionTile(tx: tx))
-                          .toList(growable: false),
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),
@@ -496,6 +531,10 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
   }
 
   void _closeWithCriteria() {
+    if (_isClosing) {
+      return;
+    }
+    _isClosing = true;
     Navigator.of(context).pop(
       _SearchCriteria(
         query: _query,
@@ -837,6 +876,8 @@ class _SummaryPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 360;
+
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
@@ -864,24 +905,42 @@ class _SummaryPanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _smallMetric(
-                  'Total Income',
-                  _currency(monthlyIncome),
-                  const Color(0xFFDCFCE7),
-                  const Color(0xFF14532D),
-                ),
-                _smallMetric(
-                  'Total Expense',
-                  _currency(monthlyExpense),
-                  const Color(0xFFFFE4E6),
-                  const Color(0xFF881337),
-                ),
-              ],
-            ),
+            if (isCompact) ...[
+              _smallMetric(
+                'Total Income',
+                _currency(monthlyIncome),
+                const Color(0xFFDCFCE7),
+                const Color(0xFF14532D),
+              ),
+              const SizedBox(height: 10),
+              _smallMetric(
+                'Total Expense',
+                _currency(monthlyExpense),
+                const Color(0xFFFFE4E6),
+                const Color(0xFF881337),
+              ),
+            ] else
+              Row(
+                children: [
+                  Expanded(
+                    child: _smallMetric(
+                      'Total Income',
+                      _currency(monthlyIncome),
+                      const Color(0xFFDCFCE7),
+                      const Color(0xFF14532D),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _smallMetric(
+                      'Total Expense',
+                      _currency(monthlyExpense),
+                      const Color(0xFFFFE4E6),
+                      const Color(0xFF881337),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -892,7 +951,7 @@ class _SummaryPanel extends StatelessWidget {
     return Builder(
       builder: (context) {
         return Container(
-          constraints: const BoxConstraints(minWidth: 145),
+          width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: bg,
@@ -1095,11 +1154,17 @@ class _TransactionTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: Text(
-        '${isIncome ? '+' : '-'} ${_currency(tx.amount)}',
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: amountColor,
-          fontWeight: FontWeight.w700,
+      trailing: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 108),
+        child: Text(
+          '${isIncome ? '+' : '-'} ${_currency(tx.amount)}',
+          textAlign: TextAlign.end,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: amountColor,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
