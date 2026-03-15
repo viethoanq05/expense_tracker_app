@@ -14,4 +14,12 @@ class AppPreferencesScope extends InheritedNotifier<AppPreferencesController> {
     assert(scope != null, 'AppPreferencesScope is missing in the widget tree.');
     return scope!.notifier!;
   }
+
+  static AppPreferencesController read(BuildContext context) {
+    final element = context
+        .getElementForInheritedWidgetOfExactType<AppPreferencesScope>();
+    final scope = element?.widget as AppPreferencesScope?;
+    assert(scope != null, 'AppPreferencesScope is missing in the widget tree.');
+    return scope!.notifier!;
+  }
 }

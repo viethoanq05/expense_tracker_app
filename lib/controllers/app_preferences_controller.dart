@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:expense_tracker_app/localization/app_strings.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,23 +12,35 @@ class AppPreferencesController extends ChangeNotifier {
     required ThemeMode themeMode,
     required AppLanguage language,
     required Map<String, double> budgets,
+    required bool pinLockEnabled,
+    required String? pinCodeHash,
   }) : _themeMode = themeMode,
        _language = language,
-       _budgets = budgets;
+       _budgets = budgets,
+       _pinLockEnabled = pinLockEnabled,
+       _pinCodeHash = pinCodeHash;
 
   static const _themeModeKey = 'theme_mode';
   static const _languageKey = 'language';
   static const _budgetsKey = 'budgets';
+  static const _pinLockKey = 'pin_lock_enabled';
+  static const _pinCodeHashKey = 'pin_code_hash';
 
   final SharedPreferences _preferences;
 
   ThemeMode _themeMode;
   AppLanguage _language;
   Map<String, double> _budgets;
+  bool _pinLockEnabled;
+  String? _pinCodeHash;
+  int _lockRequestToken = 0;
 
   ThemeMode get themeMode => _themeMode;
   AppLanguage get language => _language;
   Map<String, double> get budgets => UnmodifiableMapView(_budgets);
+  bool get pinLockEnabled => _pinLockEnabled;
+  bool get hasPinCode => (_pinCodeHash ?? '').isNotEmpty;
+  int get lockRequestToken => _lockRequestToken;
 
   static Future<AppPreferencesController> load() async {
     final preferences = await SharedPreferences.getInstance();
@@ -55,6 +68,8 @@ class AppPreferencesController extends ChangeNotifier {
       themeMode: themeMode,
       language: language,
       budgets: budgets,
+      pinLockEnabled: preferences.getBool(_pinLockKey) ?? false,
+      pinCodeHash: preferences.getString(_pinCodeHashKey),
     );
   }
 
@@ -96,5 +111,57 @@ class AppPreferencesController extends ChangeNotifier {
     final encoded = jsonEncode(_budgets);
     await _preferences.setString(_budgetsKey, encoded);
     notifyListeners();
+  }
+
+  Future<void> setPinLockEnabled(bool enabled) async {
+    if (_pinLockEnabled == enabled) {
+      return;
+    }
+
+    if (enabled && !hasPinCode) {
+      return;
+    }
+
+    _pinLockEnabled = enabled;
+    await _preferences.setBool(_pinLockKey, enabled);
+    notifyListeners();
+  }
+
+  Future<void> savePinCode(String pin) async {
+    _pinCodeHash = _hashPin(pin);
+    _pinLockEnabled = true;
+    _lockRequestToken++;
+    await _preferences.setString(_pinCodeHashKey, _pinCodeHash!);
+    await _preferences.setBool(_pinLockKey, true);
+    notifyListeners();
+  }
+
+  void requestPinLock() {
+    if (!pinLockEnabled || !hasPinCode) {
+      return;
+    }
+
+    _lockRequestToken++;
+    notifyListeners();
+  }
+
+  Future<void> clearPinCode() async {
+    _pinCodeHash = null;
+    _pinLockEnabled = false;
+    await _preferences.remove(_pinCodeHashKey);
+    await _preferences.setBool(_pinLockKey, false);
+    notifyListeners();
+  }
+
+  bool verifyPinCode(String pin) {
+    if (!hasPinCode) {
+      return true;
+    }
+
+    return _pinCodeHash == _hashPin(pin);
+  }
+
+  String _hashPin(String pin) {
+    return sha256.convert(utf8.encode(pin)).toString();
   }
 }

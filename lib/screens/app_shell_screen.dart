@@ -1,6 +1,5 @@
 import 'package:expense_tracker_app/controllers/navigation_controller.dart';
 import 'package:expense_tracker_app/localization/app_strings.dart';
-import 'package:expense_tracker_app/screens/budget_screen.dart';
 import 'package:expense_tracker_app/screens/dashboard_screen.dart';
 import 'package:expense_tracker_app/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
@@ -59,7 +58,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
         children: [
           const DashboardScreen(),
           _PlaceholderTab(title: strings.transactionsLabel),
-          const BudgetScreen(),
+          const SizedBox.shrink(),
           const SettingsScreen(),
         ],
       ),
@@ -185,7 +184,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
               children: [
                 const DashboardScreen(),
                 _PlaceholderTab(title: strings.transactionsLabel),
-                const BudgetScreen(),
+                const SizedBox.shrink(),
                 const SettingsScreen(),
               ],
             ),

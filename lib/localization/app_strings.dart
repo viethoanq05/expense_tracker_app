@@ -105,6 +105,18 @@ class AppStrings {
   String get exportCsvLabel => _isVi ? 'Xuất CSV' : 'Export CSV';
   String get exportExcelLabel =>
       _isVi ? 'Xuất CSV mở bằng Excel' : 'Export Excel-compatible CSV';
+  String get openFolderLabel => _isVi ? 'Mở thư mục' : 'Open folder';
+  String get openFileLabel => _isVi ? 'Mở file' : 'Open file';
+  String get shareFileLabel => _isVi ? 'Chia sẻ file' : 'Share file';
+  String get noExportYetLabel =>
+      _isVi ? 'Chưa có file export gần nhất.' : 'No recent exported file yet.';
+  String get latestExportLabel => _isVi ? 'File gần nhất:' : 'Latest file:';
+  String get openFolderFailed =>
+      _isVi ? 'Không mở được thư mục.' : 'Unable to open folder.';
+  String get openFileFailed =>
+      _isVi ? 'Không mở được file.' : 'Unable to open file.';
+  String get shareFileFailed =>
+      _isVi ? 'Không thể chia sẻ file.' : 'Unable to share file.';
   String get exportingLabel => _isVi ? 'Đang xuất...' : 'Exporting...';
   String exportSuccess(String path) =>
       _isVi ? 'Đã xuất file tại: $path' : 'File exported to: $path';
@@ -112,4 +124,45 @@ class AppStrings {
       _isVi ? 'Xuất file thất bại: $error' : 'Export failed: $error';
   String get englishLabel => 'English';
   String get vietnameseLabel => 'Tiếng Việt';
+
+  String get securitySectionTitle => _isVi ? 'Bảo mật' : 'Security';
+  String get pinLockLabel =>
+      _isVi ? 'Khoá ứng dụng bằng mã PIN' : 'Lock app with PIN';
+  String get pinLockDescription => _isVi
+      ? 'Thiết lập mã PIN 4 số để mở app sau khi mở lại từ nền.'
+      : 'Set a 4-digit PIN to unlock the app when reopening it.';
+  String get pinSetUpLabel => _isVi ? 'Thiết lập mã PIN' : 'Set PIN';
+  String get pinChangeLabel => _isVi ? 'Đổi mã PIN' : 'Change PIN';
+  String get pinRemoveLabel => _isVi ? 'Xoá mã PIN' : 'Remove PIN';
+  String get pinEnableLabel => _isVi ? 'Bật khoá bằng PIN' : 'Enable PIN lock';
+  String get pinEnabledDescription => _isVi
+      ? 'App sẽ yêu cầu mã PIN khi mở lại.'
+      : 'The app will require your PIN when reopened.';
+  String get pinDisabledDescription => _isVi
+      ? 'Đã lưu mã PIN nhưng đang tắt khóa ứng dụng.'
+      : 'PIN is saved but app lock is currently disabled.';
+  String get pinDialogTitle => _isVi ? 'Thiết lập mã PIN' : 'Set PIN';
+  String get pinDialogChangeTitle => _isVi ? 'Đổi mã PIN' : 'Change PIN';
+  String get pinFieldLabel => _isVi ? 'Mã PIN 4 số' : '4-digit PIN';
+  String get pinConfirmFieldLabel => _isVi ? 'Nhập lại mã PIN' : 'Confirm PIN';
+  String get pinCurrentFieldLabel => _isVi ? 'Mã PIN hiện tại' : 'Current PIN';
+  String get pinSaveLabel => _isVi ? 'Lưu mã PIN' : 'Save PIN';
+  String get pinUnlockLabel => _isVi ? 'Mở khoá' : 'Unlock';
+  String get pinPrompt => _isVi
+      ? 'Nhập mã PIN để mở khóa ứng dụng'
+      : 'Enter your PIN to unlock the app';
+  String get pinIncorrect => _isVi
+      ? 'Mã PIN không đúng. Vui lòng thử lại.'
+      : 'Incorrect PIN. Please try again.';
+  String get pinValidationLength => _isVi
+      ? 'Mã PIN phải gồm đúng 4 chữ số.'
+      : 'PIN must be exactly 4 digits.';
+  String get pinValidationMismatch => _isVi
+      ? 'Mã PIN xác nhận không khớp.'
+      : 'PIN confirmation does not match.';
+  String get pinValidationCurrentIncorrect =>
+      _isVi ? 'Mã PIN hiện tại không đúng.' : 'Current PIN is incorrect.';
+  String get pinSavedSuccess => _isVi ? 'Đã lưu mã PIN.' : 'PIN saved.';
+  String get pinRemovedSuccess => _isVi ? 'Đã xoá mã PIN.' : 'PIN removed.';
+  String get pinCancelLabel => _isVi ? 'Huỷ' : 'Cancel';
 }

@@ -6,6 +6,7 @@ import 'package:expense_tracker_app/screens/app_shell_screen.dart';
 import 'package:expense_tracker_app/services/firebase_bootstrap.dart';
 import 'package:expense_tracker_app/theme/app_theme.dart';
 import 'package:expense_tracker_app/widgets/app_preferences_scope.dart';
+import 'package:expense_tracker_app/widgets/pin_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,7 +55,7 @@ class _ExpenseTrackerAppState extends State<ExpenseTrackerApp> {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            home: const AppShellScreen(),
+            home: const PinGate(child: AppShellScreen()),
           ),
         );
       },

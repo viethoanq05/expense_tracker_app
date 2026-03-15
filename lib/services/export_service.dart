@@ -9,6 +9,19 @@ class ExportService {
 
   final ExpenseRepository _repository;
 
+  Future<Directory> getExportDirectory() async {
+    Directory? base;
+    if (Platform.isAndroid) {
+      base = await getExternalStorageDirectory();
+    }
+    base ??= await getApplicationDocumentsDirectory();
+    final exportDirectory = Directory(
+      '${base.path}${Platform.pathSeparator}exports',
+    );
+    await exportDirectory.create(recursive: true);
+    return exportDirectory;
+  }
+
   Future<File> exportTransactionsToCsv({bool excelCompatible = false}) async {
     final transactions = await _repository.getTransactions();
     final rows = <List<dynamic>>[
@@ -28,11 +41,7 @@ class ExportService {
 
     final csv = const ListToCsvConverter().convert(rows);
     final content = excelCompatible ? '\ufeff$csv' : csv;
-    final directory = await getApplicationDocumentsDirectory();
-    final exportDirectory = Directory(
-      '${directory.path}${Platform.pathSeparator}exports',
-    );
-    await exportDirectory.create(recursive: true);
+    final exportDirectory = await getExportDirectory();
 
     final timestamp = DateTime.now()
         .toIso8601String()
