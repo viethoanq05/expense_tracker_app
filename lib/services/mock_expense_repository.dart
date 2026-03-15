@@ -133,16 +133,16 @@ class MockExpenseRepository implements ExpenseRepository {
   static final List<TransactionRecord> _defaultTransactions = [
     TransactionRecord(
       id: 'tx_001',
-      title: 'Luong thang 3',
+      title: 'Lương tháng 3',
       amount: 18500000,
       date: DateTime(2026, 3, 1),
       category: 'Salary',
       type: TransactionType.income,
-      note: 'Cong ty ABC',
+      note: 'Công ty ABC',
     ),
     TransactionRecord(
       id: 'tx_002',
-      title: 'An trua van phong',
+      title: 'Ăn trưa văn phòng',
       amount: 85000,
       date: DateTime(2026, 3, 12),
       category: 'Food',
@@ -150,7 +150,7 @@ class MockExpenseRepository implements ExpenseRepository {
     ),
     TransactionRecord(
       id: 'tx_003',
-      title: 'Cafe hop nhom',
+      title: 'Cafe họp nhóm',
       amount: 58000,
       date: DateTime(2026, 3, 11),
       category: 'Food',
@@ -158,7 +158,7 @@ class MockExpenseRepository implements ExpenseRepository {
     ),
     TransactionRecord(
       id: 'tx_004',
-      title: 'Di chuyen grab',
+      title: 'Di chuyển Grab',
       amount: 124000,
       date: DateTime(2026, 3, 10),
       category: 'Transport',
@@ -166,7 +166,7 @@ class MockExpenseRepository implements ExpenseRepository {
     ),
     TransactionRecord(
       id: 'tx_005',
-      title: 'Mua do gia dung',
+      title: 'Mua đồ gia dụng',
       amount: 332000,
       date: DateTime(2026, 3, 9),
       category: 'Shopping',
@@ -182,7 +182,7 @@ class MockExpenseRepository implements ExpenseRepository {
     ),
     TransactionRecord(
       id: 'tx_007',
-      title: 'Tien nha',
+      title: 'Tiền nhà',
       amount: 3500000,
       date: DateTime(2026, 3, 5),
       category: 'Housing',
@@ -206,7 +206,7 @@ class MockExpenseRepository implements ExpenseRepository {
     ),
     TransactionRecord(
       id: 'tx_010',
-      title: 'Sieu thi cuoi tuan',
+      title: 'Siêu thị cuối tuần',
       amount: 675000,
       date: DateTime(2026, 2, 26),
       category: 'Groceries',
@@ -214,7 +214,7 @@ class MockExpenseRepository implements ExpenseRepository {
     ),
     TransactionRecord(
       id: 'tx_011',
-      title: 'Hoc phi online',
+      title: 'Học phí online',
       amount: 499000,
       date: DateTime(2026, 2, 21),
       category: 'Education',

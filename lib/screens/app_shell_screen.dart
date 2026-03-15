@@ -1,5 +1,8 @@
 import 'package:expense_tracker_app/controllers/navigation_controller.dart';
+import 'package:expense_tracker_app/localization/app_strings.dart';
+import 'package:expense_tracker_app/screens/budget_screen.dart';
 import 'package:expense_tracker_app/screens/dashboard_screen.dart';
+import 'package:expense_tracker_app/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 
 class AppShellScreen extends StatefulWidget {
@@ -14,13 +17,6 @@ class _AppShellScreenState extends State<AppShellScreen> {
   static const double _desktopBreakpoint = 1100;
 
   late final NavigationController _navigationController;
-
-  final List<Widget> _tabs = const [
-    DashboardScreen(),
-    _PlaceholderTab(title: 'Transactions'),
-    _PlaceholderTab(title: 'Budget'),
-    _PlaceholderTab(title: 'Settings'),
-  ];
 
   @override
   void initState() {
@@ -55,16 +51,23 @@ class _AppShellScreenState extends State<AppShellScreen> {
   }
 
   Scaffold _buildMobileScaffold() {
+    final strings = AppStrings.of(context);
+
     return Scaffold(
       body: IndexedStack(
         index: _navigationController.currentIndex,
-        children: _tabs,
+        children: [
+          const DashboardScreen(),
+          _PlaceholderTab(title: strings.transactionsLabel),
+          const BudgetScreen(),
+          const SettingsScreen(),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
         // Reserved for the Add Transaction flow owned by another teammate.
         onPressed: () {},
-        tooltip: 'Add transaction',
+        tooltip: strings.addTransactionTooltip,
         child: const Icon(Icons.add_rounded),
       ),
       bottomNavigationBar: BottomAppBar(
@@ -85,7 +88,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                       child: _NavTabItem(
                         icon: Icons.dashboard_outlined,
                         selectedIcon: Icons.dashboard_rounded,
-                        label: 'Dashboard',
+                        label: strings.dashboardLabel,
                         selected: _navigationController.currentIndex == 0,
                         onTap: () => _navigationController.changeTab(0),
                         showLabel: showLabels,
@@ -95,7 +98,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                       child: _NavTabItem(
                         icon: Icons.receipt_long_outlined,
                         selectedIcon: Icons.receipt_long,
-                        label: 'Transactions',
+                        label: strings.transactionsLabel,
                         selected: _navigationController.currentIndex == 1,
                         onTap: () => _navigationController.changeTab(1),
                         showLabel: showLabels,
@@ -106,7 +109,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                       child: _NavTabItem(
                         icon: Icons.pie_chart_outline,
                         selectedIcon: Icons.pie_chart,
-                        label: 'Budget',
+                        label: strings.budgetLabel,
                         selected: _navigationController.currentIndex == 2,
                         onTap: () => _navigationController.changeTab(2),
                         showLabel: showLabels,
@@ -116,7 +119,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                       child: _NavTabItem(
                         icon: Icons.settings_outlined,
                         selectedIcon: Icons.settings,
-                        label: 'Settings',
+                        label: strings.settingsLabel,
                         selected: _navigationController.currentIndex == 3,
                         onTap: () => _navigationController.changeTab(3),
                         showLabel: showLabels,
@@ -133,12 +136,14 @@ class _AppShellScreenState extends State<AppShellScreen> {
   }
 
   Scaffold _buildWideScaffold({required bool extendedRail}) {
+    final strings = AppStrings.of(context);
+
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         // Reserved for the Add Transaction flow owned by another teammate.
         onPressed: () {},
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Add'),
+        label: Text(strings.addLabel),
       ),
       body: Row(
         children: [
@@ -150,26 +155,26 @@ class _AppShellScreenState extends State<AppShellScreen> {
             labelType: extendedRail
                 ? NavigationRailLabelType.none
                 : NavigationRailLabelType.all,
-            destinations: const [
+            destinations: [
               NavigationRailDestination(
                 icon: Icon(Icons.dashboard_outlined),
                 selectedIcon: Icon(Icons.dashboard_rounded),
-                label: Text('Dashboard'),
+                label: Text(strings.dashboardLabel),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.receipt_long_outlined),
                 selectedIcon: Icon(Icons.receipt_long),
-                label: Text('Transactions'),
+                label: Text(strings.transactionsLabel),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.pie_chart_outline),
                 selectedIcon: Icon(Icons.pie_chart),
-                label: Text('Budget'),
+                label: Text(strings.budgetLabel),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.settings_outlined),
                 selectedIcon: Icon(Icons.settings),
-                label: Text('Settings'),
+                label: Text(strings.settingsLabel),
               ),
             ],
           ),
@@ -177,7 +182,12 @@ class _AppShellScreenState extends State<AppShellScreen> {
           Expanded(
             child: IndexedStack(
               index: _navigationController.currentIndex,
-              children: _tabs,
+              children: [
+                const DashboardScreen(),
+                _PlaceholderTab(title: strings.transactionsLabel),
+                const BudgetScreen(),
+                const SettingsScreen(),
+              ],
             ),
           ),
         ],
@@ -256,10 +266,12 @@ class _PlaceholderTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+
     return SafeArea(
       child: Center(
         child: Text(
-          '$title screen (coming soon)',
+          '${strings.comingSoonPrefix} $title',
           style: Theme.of(context).textTheme.titleMedium,
         ),
       ),
