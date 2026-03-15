@@ -1,11 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:expense_tracker_app/models/expense_filter.dart';
 import 'package:expense_tracker_app/models/transaction_record.dart';
+import 'package:expense_tracker_app/services/repository_registry.dart';
 import 'package:flutter/material.dart';
-
-enum TimeFilter { all, last7Days, last30Days, thisMonth }
-
-enum AmountFilter { all, under200k, from200kTo1m, over1m }
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -15,109 +13,54 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  TimeFilter _selectedTimeFilter = TimeFilter.all;
-  AmountFilter _selectedAmountFilter = AmountFilter.all;
-  String _selectedCategory = _allCategories;
-  String _query = '';
+  static const double _tabletBreakpoint = 760;
+  static const double _desktopBreakpoint = 1100;
 
-  static const String _allCategories = 'All categories';
+  bool _isLoading = true;
+  String? _loadError;
+  List<TransactionRecord> _allTransactions = const [];
 
-  final List<TransactionRecord> _seedTransactions = [
-    TransactionRecord(
-      id: 'tx_001',
-      title: 'Luong thang 3',
-      amount: 18500000,
-      date: DateTime(2026, 3, 1),
-      category: 'Salary',
-      type: TransactionType.income,
-      note: 'Cong ty ABC',
-    ),
-    TransactionRecord(
-      id: 'tx_002',
-      title: 'An trua van phong',
-      amount: 85000,
-      date: DateTime(2026, 3, 12),
-      category: 'Food',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_003',
-      title: 'Cafe hop nhom',
-      amount: 58000,
-      date: DateTime(2026, 3, 11),
-      category: 'Food',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_004',
-      title: 'Di chuyen grab',
-      amount: 124000,
-      date: DateTime(2026, 3, 10),
-      category: 'Transport',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_005',
-      title: 'Mua do gia dung',
-      amount: 332000,
-      date: DateTime(2026, 3, 9),
-      category: 'Shopping',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_006',
-      title: 'Freelance sprint UI',
-      amount: 2100000,
-      date: DateTime(2026, 3, 7),
-      category: 'Freelance',
-      type: TransactionType.income,
-    ),
-    TransactionRecord(
-      id: 'tx_007',
-      title: 'Tien nha',
-      amount: 3500000,
-      date: DateTime(2026, 3, 5),
-      category: 'Housing',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_008',
-      title: 'Netflix',
-      amount: 260000,
-      date: DateTime(2026, 3, 4),
-      category: 'Subscription',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_009',
-      title: 'Hoan tien dat xe',
-      amount: 54000,
-      date: DateTime(2026, 2, 28),
-      category: 'Refund',
-      type: TransactionType.income,
-    ),
-    TransactionRecord(
-      id: 'tx_010',
-      title: 'Sieu thi cuoi tuan',
-      amount: 675000,
-      date: DateTime(2026, 2, 26),
-      category: 'Groceries',
-      type: TransactionType.expense,
-    ),
-    TransactionRecord(
-      id: 'tx_011',
-      title: 'Hoc phi online',
-      amount: 499000,
-      date: DateTime(2026, 2, 21),
-      category: 'Education',
-      type: TransactionType.expense,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  Future<void> _loadTransactions() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+
+    try {
+      await RepositoryRegistry.seedDemoDataIfNeeded();
+      final transactions = await RepositoryRegistry.expenseRepository
+          .getTransactions();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _allTransactions = transactions;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+        _loadError = error.toString();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final monthlyTransactions = _transactionsInMonth(now, _seedTransactions);
+    final monthlyTransactions = _transactionsInMonth(now, _allTransactions);
     final monthlyIncome = _sumByType(
       monthlyTransactions,
       TransactionType.income,
@@ -127,16 +70,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       TransactionType.expense,
     );
     final monthlyBalance = monthlyIncome - monthlyExpense;
-
-    final filtered = _applySearchAndTimeFilter(_seedTransactions, now);
-    final recentTransactions = filtered.take(5).toList();
-    final availableCategories = _availableCategories(_seedTransactions);
+    final recentTransactions = _latestTransactions(_allTransactions);
+    final availableCategories = _availableCategories(_allTransactions);
 
     return SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 900;
-          final horizontalPadding = isWide ? 28.0 : 16.0;
+          final width = constraints.maxWidth;
+          final isTablet = width >= _tabletBreakpoint;
+          final isDesktop = width >= _desktopBreakpoint;
+          final horizontalPadding = isDesktop ? 32.0 : (isTablet ? 24.0 : 16.0);
+          final maxContentWidth = isDesktop ? 1180.0 : 900.0;
 
           return CustomScrollView(
             slivers: [
@@ -147,52 +91,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   horizontalPadding,
                   24,
                 ),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    _Header(
-                      monthLabel: _monthLabel(now),
-                      onOpenSearch: () => _openSearchPage(availableCategories),
-                    ),
-                    const SizedBox(height: 16),
-                    isWide
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 5,
-                                child: _SummaryPanel(
-                                  monthlyBalance: monthlyBalance,
-                                  monthlyExpense: monthlyExpense,
-                                  monthlyIncome: monthlyIncome,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                flex: 4,
-                                child: _MonthlyReportCard(
-                                  monthlyTransactions: monthlyTransactions,
-                                  monthlyExpense: monthlyExpense,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            children: [
-                              _SummaryPanel(
-                                monthlyBalance: monthlyBalance,
-                                monthlyExpense: monthlyExpense,
-                                monthlyIncome: monthlyIncome,
-                              ),
-                              const SizedBox(height: 12),
-                              _MonthlyReportCard(
-                                monthlyTransactions: monthlyTransactions,
-                                monthlyExpense: monthlyExpense,
-                              ),
-                            ],
+                sliver: SliverToBoxAdapter(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: maxContentWidth),
+                      child: Column(
+                        children: [
+                          _Header(
+                            monthLabel: _monthLabel(now),
+                            onOpenSearch: () =>
+                                _openSearchPage(availableCategories),
+                            compact: !isTablet,
                           ),
-                    const SizedBox(height: 18),
-                    _RecentTransactionsCard(transactions: recentTransactions),
-                  ]),
+                          const SizedBox(height: 16),
+                          if (_isLoading) ...[
+                            const _LoadingCard(),
+                            const SizedBox(height: 16),
+                          ] else if (_loadError != null) ...[
+                            _ErrorCard(
+                              error: _loadError!,
+                              onRetry: _loadTransactions,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          isDesktop
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 5,
+                                      child: _SummaryPanel(
+                                        monthlyBalance: monthlyBalance,
+                                        monthlyExpense: monthlyExpense,
+                                        monthlyIncome: monthlyIncome,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 20),
+                                    Expanded(
+                                      flex: 4,
+                                      child: _MonthlyReportCard(
+                                        monthlyTransactions:
+                                            monthlyTransactions,
+                                        monthlyExpense: monthlyExpense,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    _SummaryPanel(
+                                      monthlyBalance: monthlyBalance,
+                                      monthlyExpense: monthlyExpense,
+                                      monthlyIncome: monthlyIncome,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _MonthlyReportCard(
+                                      monthlyTransactions: monthlyTransactions,
+                                      monthlyExpense: monthlyExpense,
+                                    ),
+                                  ],
+                                ),
+                          const SizedBox(height: 18),
+                          _RecentTransactionsCard(
+                            transactions: recentTransactions,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -211,76 +177,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .toList(growable: false);
   }
 
-  List<TransactionRecord> _applySearchAndTimeFilter(
-    List<TransactionRecord> source,
-    DateTime now,
-  ) {
+  List<TransactionRecord> _latestTransactions(List<TransactionRecord> source) {
     final sorted = [...source]..sort((a, b) => b.date.compareTo(a.date));
-
-    return sorted
-        .where((tx) {
-          final matchTime = switch (_selectedTimeFilter) {
-            TimeFilter.all => true,
-            TimeFilter.last7Days => tx.date.isAfter(
-              now.subtract(const Duration(days: 7)),
-            ),
-            TimeFilter.last30Days => tx.date.isAfter(
-              now.subtract(const Duration(days: 30)),
-            ),
-            TimeFilter.thisMonth =>
-              tx.date.month == now.month && tx.date.year == now.year,
-          };
-
-          final amount = tx.amount.abs();
-          final matchAmount = switch (_selectedAmountFilter) {
-            AmountFilter.all => true,
-            AmountFilter.under200k => amount < 200000,
-            AmountFilter.from200kTo1m => amount >= 200000 && amount <= 1000000,
-            AmountFilter.over1m => amount > 1000000,
-          };
-
-          final matchCategory =
-              _selectedCategory == _allCategories ||
-              tx.category == _selectedCategory;
-
-          final keyword = _query.toLowerCase();
-          final searchable = '${tx.title} ${tx.category} ${tx.note ?? ''}'
-              .toLowerCase();
-          final matchQuery = keyword.isEmpty || searchable.contains(keyword);
-
-          return matchTime && matchAmount && matchCategory && matchQuery;
-        })
-        .toList(growable: false);
+    return sorted.take(5).toList(growable: false);
   }
 
   List<String> _availableCategories(List<TransactionRecord> source) {
     final categories = source.map((tx) => tx.category).toSet().toList()..sort();
-    return [_allCategories, ...categories];
+    return [ExpenseFilter.allCategories, ...categories];
   }
 
   Future<void> _openSearchPage(List<String> categories) async {
-    final criteria = await Navigator.of(context).push<_SearchCriteria>(
+    await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => _DashboardSearchPage(
-          initialQuery: _query,
-          initialTimeFilter: _selectedTimeFilter,
-          initialAmountFilter: _selectedAmountFilter,
-          initialCategory: _selectedCategory,
+          initialFilter: const ExpenseFilter(),
           categories: categories,
-          allCategoriesLabel: _allCategories,
-          sourceTransactions: _seedTransactions,
+          allCategoriesLabel: ExpenseFilter.allCategories,
+          sourceTransactions: _allTransactions,
         ),
       ),
     );
-
-    if (criteria != null) {
-      setState(() {
-        _query = criteria.query;
-        _selectedTimeFilter = criteria.timeFilter;
-        _selectedAmountFilter = criteria.amountFilter;
-        _selectedCategory = criteria.category;
-      });
-    }
   }
 
   double _sumByType(
@@ -313,10 +230,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.monthLabel, required this.onOpenSearch});
+  const _Header({
+    required this.monthLabel,
+    required this.onOpenSearch,
+    required this.compact,
+  });
 
   final String monthLabel;
   final VoidCallback onOpenSearch;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -329,10 +251,10 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'TH5 - Nhóm 12',
-                style: textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                'TH5 - Nhom 12',
+                style:
+                    (compact ? textTheme.titleLarge : textTheme.headlineSmall)
+                        ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
               Text(
@@ -362,35 +284,15 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _SearchCriteria {
-  const _SearchCriteria({
-    required this.query,
-    required this.timeFilter,
-    required this.amountFilter,
-    required this.category,
-  });
-
-  final String query;
-  final TimeFilter timeFilter;
-  final AmountFilter amountFilter;
-  final String category;
-}
-
 class _DashboardSearchPage extends StatefulWidget {
   const _DashboardSearchPage({
-    required this.initialQuery,
-    required this.initialTimeFilter,
-    required this.initialAmountFilter,
-    required this.initialCategory,
+    required this.initialFilter,
     required this.categories,
     required this.allCategoriesLabel,
     required this.sourceTransactions,
   });
 
-  final String initialQuery;
-  final TimeFilter initialTimeFilter;
-  final AmountFilter initialAmountFilter;
-  final String initialCategory;
+  final ExpenseFilter initialFilter;
   final List<String> categories;
   final String allCategoriesLabel;
   final List<TransactionRecord> sourceTransactions;
@@ -405,15 +307,16 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
   late AmountFilter _amountFilter;
   late String _category;
   String _query = '';
+  bool _isClosing = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initialQuery);
-    _query = widget.initialQuery;
-    _timeFilter = widget.initialTimeFilter;
-    _amountFilter = widget.initialAmountFilter;
-    _category = widget.initialCategory;
+    _controller = TextEditingController(text: widget.initialFilter.keyword);
+    _query = widget.initialFilter.keyword;
+    _timeFilter = widget.initialFilter.timeFilter;
+    _amountFilter = widget.initialFilter.amountFilter;
+    _category = widget.initialFilter.category;
   }
 
   @override
@@ -424,23 +327,29 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final preview = _applyFilters(
-      query: _query,
-      timeFilter: _timeFilter,
-      amountFilter: _amountFilter,
-      category: _category,
+    final preview = _applyFilter(
+      widget.sourceTransactions,
+      ExpenseFilter(
+        keyword: _query,
+        timeFilter: _timeFilter,
+        amountFilter: _amountFilter,
+        category: _category,
+      ),
+      DateTime.now(),
     );
 
-    return WillPopScope(
-      onWillPop: () async {
-        _closeWithCriteria();
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _closePage();
+        }
       },
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
           leading: IconButton(
-            onPressed: _closeWithCriteria,
+            onPressed: _closePage,
             icon: const Icon(Icons.arrow_back_rounded),
             tooltip: 'Back',
           ),
@@ -471,58 +380,67 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
               tooltip: 'Open filters',
               icon: const Icon(Icons.tune_rounded),
             ),
-            TextButton(onPressed: _reset, child: const Text('Reset')),
+            IconButton(
+              onPressed: _reset,
+              tooltip: 'Reset filters',
+              icon: const Icon(Icons.refresh_rounded),
+            ),
           ],
         ),
         body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 children: [
-                  _FilterInfoChip(
-                    label: _amountLabel(_timeFilter, _amountFilter).$1,
-                    value: _amountLabel(_timeFilter, _amountFilter).$2,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _FilterInfoChip(
+                        label: _amountLabel(_amountFilter).$1,
+                        value: _amountLabel(_amountFilter).$2,
+                      ),
+                      _FilterInfoChip(
+                        label: 'Time',
+                        value: _timeLabel(_timeFilter),
+                      ),
+                      _FilterInfoChip(label: 'Category', value: _category),
+                    ],
                   ),
-                  _FilterInfoChip(
-                    label: 'Time',
-                    value: _timeLabel(_timeFilter),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Matched transactions: ${preview.length}',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  _FilterInfoChip(label: 'Category', value: _category),
+                  const SizedBox(height: 8),
+                  if (preview.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'No transactions found with current filters.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    )
+                  else
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+                        child: Column(
+                          children: preview
+                              .map((tx) => _TransactionTile(tx: tx))
+                              .toList(growable: false),
+                        ),
+                      ),
+                    ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Matched transactions: ${preview.length}',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              if (preview.isEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'No transactions found with current filters.',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                )
-              else
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
-                    child: Column(
-                      children: preview
-                          .map((tx) => _TransactionTile(tx: tx))
-                          .toList(growable: false),
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),
@@ -539,15 +457,12 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
     });
   }
 
-  void _closeWithCriteria() {
-    Navigator.of(context).pop(
-      _SearchCriteria(
-        query: _query,
-        timeFilter: _timeFilter,
-        amountFilter: _amountFilter,
-        category: _category,
-      ),
-    );
+  void _closePage() {
+    if (_isClosing) {
+      return;
+    }
+    _isClosing = true;
+    Navigator.of(context).pop();
   }
 
   Future<void> _openFilterSheet() async {
@@ -705,61 +620,17 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
     );
   }
 
-  List<TransactionRecord> _applyFilters({
-    required String query,
-    required TimeFilter timeFilter,
-    required AmountFilter amountFilter,
-    required String category,
-  }) {
-    final now = DateTime.now();
-    final sorted = [...widget.sourceTransactions]
-      ..sort((a, b) => b.date.compareTo(a.date));
-
-    return sorted
-        .where((tx) {
-          final matchTime = switch (timeFilter) {
-            TimeFilter.all => true,
-            TimeFilter.last7Days => tx.date.isAfter(
-              now.subtract(const Duration(days: 7)),
-            ),
-            TimeFilter.last30Days => tx.date.isAfter(
-              now.subtract(const Duration(days: 30)),
-            ),
-            TimeFilter.thisMonth =>
-              tx.date.month == now.month && tx.date.year == now.year,
-          };
-
-          final amount = tx.amount.abs();
-          final matchAmount = switch (amountFilter) {
-            AmountFilter.all => true,
-            AmountFilter.under200k => amount < 200000,
-            AmountFilter.from200kTo1m => amount >= 200000 && amount <= 1000000,
-            AmountFilter.over1m => amount > 1000000,
-          };
-
-          final matchCategory =
-              category == widget.allCategoriesLabel || tx.category == category;
-
-          final keyword = query.toLowerCase();
-          final searchable = '${tx.title} ${tx.category} ${tx.note ?? ''}'
-              .toLowerCase();
-          final matchQuery = keyword.isEmpty || searchable.contains(keyword);
-
-          return matchTime && matchAmount && matchCategory && matchQuery;
-        })
-        .toList(growable: false);
-  }
-
   String _timeLabel(TimeFilter filter) {
     return switch (filter) {
       TimeFilter.all => 'All time',
       TimeFilter.last7Days => 'Last 7 days',
       TimeFilter.last30Days => 'Last 30 days',
       TimeFilter.thisMonth => 'This month',
+      TimeFilter.custom => 'Custom range',
     };
   }
 
-  (String, String) _amountLabel(TimeFilter _, AmountFilter filter) {
+  (String, String) _amountLabel(AmountFilter filter) {
     return switch (filter) {
       AmountFilter.all => ('Amount', 'All amounts'),
       AmountFilter.under200k => ('Amount', 'Under 200K'),
@@ -767,6 +638,15 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
       AmountFilter.over1m => ('Amount', 'Over 1M'),
     };
   }
+}
+
+List<TransactionRecord> _applyFilter(
+  List<TransactionRecord> source,
+  ExpenseFilter filter,
+  DateTime now,
+) {
+  final sorted = [...source]..sort((a, b) => b.date.compareTo(a.date));
+  return sorted.where((tx) => filter.matches(tx, now)).toList(growable: false);
 }
 
 class _FilterInfoChip extends StatelessWidget {
@@ -799,6 +679,75 @@ class _FilterInfoChip extends StatelessWidget {
   }
 }
 
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Loading transactions from Firestore...',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.error, required this.onRetry});
+
+  final String error;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Cannot load Firestore data.',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              error,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SummaryPanel extends StatelessWidget {
   const _SummaryPanel({
     required this.monthlyBalance,
@@ -812,6 +761,8 @@ class _SummaryPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 360;
+
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
@@ -839,24 +790,42 @@ class _SummaryPanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _smallMetric(
-                  'Total Income',
-                  _currency(monthlyIncome),
-                  const Color(0xFFDCFCE7),
-                  const Color(0xFF14532D),
-                ),
-                _smallMetric(
-                  'Total Expense',
-                  _currency(monthlyExpense),
-                  const Color(0xFFFFE4E6),
-                  const Color(0xFF881337),
-                ),
-              ],
-            ),
+            if (isCompact) ...[
+              _smallMetric(
+                'Total Income',
+                _currency(monthlyIncome),
+                const Color(0xFFDCFCE7),
+                const Color(0xFF14532D),
+              ),
+              const SizedBox(height: 10),
+              _smallMetric(
+                'Total Expense',
+                _currency(monthlyExpense),
+                const Color(0xFFFFE4E6),
+                const Color(0xFF881337),
+              ),
+            ] else
+              Row(
+                children: [
+                  Expanded(
+                    child: _smallMetric(
+                      'Total Income',
+                      _currency(monthlyIncome),
+                      const Color(0xFFDCFCE7),
+                      const Color(0xFF14532D),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _smallMetric(
+                      'Total Expense',
+                      _currency(monthlyExpense),
+                      const Color(0xFFFFE4E6),
+                      const Color(0xFF881337),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -864,36 +833,35 @@ class _SummaryPanel extends StatelessWidget {
   }
 
   Widget _smallMetric(String label, String value, Color bg, Color fg) {
-    return Builder(
-      builder: (context) {
-        return Container(
-          constraints: const BoxConstraints(minWidth: 145),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(14),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: fg,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelMedium?.copyWith(color: fg),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: fg,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: TextStyle(
+              color: fg,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }
@@ -1016,7 +984,7 @@ class _RecentTransactionsCard extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              'Showing up to 5 latest records',
+              'Showing latest 5 records',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -1027,7 +995,7 @@ class _RecentTransactionsCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(0, 18, 0, 22),
                 child: Center(
                   child: Text(
-                    'No transaction found with current filter.',
+                    'No transaction data available.',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
@@ -1070,11 +1038,17 @@ class _TransactionTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: Text(
-        '${isIncome ? '+' : '-'} ${_currency(tx.amount)}',
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: amountColor,
-          fontWeight: FontWeight.w700,
+      trailing: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 108),
+        child: Text(
+          '${isIncome ? '+' : '-'} ${_currency(tx.amount)}',
+          textAlign: TextAlign.end,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: amountColor,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
