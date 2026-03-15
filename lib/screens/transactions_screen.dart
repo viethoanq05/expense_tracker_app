@@ -1,10 +1,13 @@
 import 'package:expense_tracker_app/models/transaction_record.dart';
 import 'package:expense_tracker_app/services/repository_registry.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'transaction_detail_sheet.dart';
 
 class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({super.key});
+  const TransactionsScreen({super.key, this.refreshNotifier});
+
+  final ValueListenable<int>? refreshNotifier;
 
   @override
   State<TransactionsScreen> createState() => _TransactionsScreenState();
@@ -35,11 +38,13 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       return DateTime(now.year, now.month - index, 1);
     });
 
+    widget.refreshNotifier?.addListener(_refresh);
     _loadTransactions();
   }
 
   @override
   void dispose() {
+    widget.refreshNotifier?.removeListener(_refresh);
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();

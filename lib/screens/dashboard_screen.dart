@@ -4,10 +4,13 @@ import 'package:expense_tracker_app/models/expense_filter.dart';
 import 'package:expense_tracker_app/models/transaction_record.dart';
 import 'package:expense_tracker_app/screens/transaction_detail_sheet.dart';
 import 'package:expense_tracker_app/services/repository_registry.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({super.key, this.refreshNotifier});
+
+  final ValueListenable<int>? refreshNotifier;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -24,7 +27,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    widget.refreshNotifier?.addListener(_loadTransactions);
     _loadTransactions();
+  }
+
+  @override
+  void dispose() {
+    widget.refreshNotifier?.removeListener(_loadTransactions);
+    super.dispose();
   }
 
   Future<void> _loadTransactions() async {
@@ -155,6 +165,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 18),
                           _RecentTransactionsCard(
                             transactions: recentTransactions,
+                            onDataChanged: _loadTransactions,
                           ),
                         ],
                       ),
@@ -434,7 +445,12 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
                         padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
                         child: Column(
                           children: preview
-                              .map((tx) => _TransactionTile(tx: tx))
+                              .map((tx) => _TransactionTile(
+                                    tx: tx,
+                                    onDataChanged: () {
+                                      // Optional: Could trigger search refresh + global refresh
+                                    },
+                                  ))
                               .toList(growable: false),
                         ),
                       ),
@@ -965,9 +981,10 @@ class _MonthlyReportCard extends StatelessWidget {
 }
 
 class _RecentTransactionsCard extends StatelessWidget {
-  const _RecentTransactionsCard({required this.transactions});
+  const _RecentTransactionsCard({required this.transactions, this.onDataChanged});
 
   final List<TransactionRecord> transactions;
+  final VoidCallback? onDataChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1002,7 +1019,10 @@ class _RecentTransactionsCard extends StatelessWidget {
                 ),
               )
             else
-              ...transactions.map((tx) => _TransactionTile(tx: tx)),
+              ...transactions.map((tx) => _TransactionTile(
+                    tx: tx,
+                    onDataChanged: onDataChanged,
+                  )),
           ],
         ),
       ),
@@ -1011,9 +1031,10 @@ class _RecentTransactionsCard extends StatelessWidget {
 }
 
 class _TransactionTile extends StatelessWidget {
-  const _TransactionTile({required this.tx});
+  const _TransactionTile({required this.tx, this.onDataChanged});
 
   final TransactionRecord tx;
+  final VoidCallback? onDataChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1031,7 +1052,9 @@ class _TransactionTile extends StatelessWidget {
           builder: (_) => TransactionDetailSheet(
             transactionId: tx.id,
             onDataChanged: () {
-              // Reload functionality could go here if needed later
+              if (onDataChanged != null) {
+                onDataChanged!();
+              }
             },
           ),
         );

@@ -16,12 +16,13 @@ class _AppShellScreenState extends State<AppShellScreen> {
   static const double _desktopBreakpoint = 1100;
 
   late final NavigationController _navigationController;
+  final ValueNotifier<int> _refreshNotifier = ValueNotifier<int>(0);
 
-  final List<Widget> _tabs = const [
-    DashboardScreen(),
-    TransactionsScreen(),
-    _PlaceholderTab(title: 'Budget'),
-    _PlaceholderTab(title: 'Settings'),
+  late final List<Widget> _tabs = [
+    DashboardScreen(refreshNotifier: _refreshNotifier),
+    TransactionsScreen(refreshNotifier: _refreshNotifier),
+    const _PlaceholderTab(title: 'Budget'),
+    const _PlaceholderTab(title: 'Settings'),
   ];
 
   @override
@@ -32,6 +33,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
 
   @override
   void dispose() {
+    _refreshNotifier.dispose();
     _navigationController.dispose();
     super.dispose();
   }
@@ -69,8 +71,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
             MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
           );
           if (added == true && mounted) {
-            // Add any top-level refresh if necessary,
-            // though Dashboard and Transactions fetch on init.
+            _refreshNotifier.value++;
           }
         },
         tooltip: 'Add transaction',
@@ -149,7 +150,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
             MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
           );
           if (added == true && mounted) {
-            // refresh
+            _refreshNotifier.value++;
           }
         },
         icon: const Icon(Icons.add_rounded),
