@@ -5,7 +5,9 @@ import 'package:expense_tracker_app/widgets/app_preferences_scope.dart';
 import 'package:flutter/material.dart';
 
 class BudgetScreen extends StatefulWidget {
-  const BudgetScreen({super.key});
+  const BudgetScreen({super.key, this.onSaved});
+
+  final ValueChanged<int>? onSaved;
 
   @override
   State<BudgetScreen> createState() => _BudgetScreenState();
@@ -139,8 +141,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   Future<void> _saveBudgets(List<String> categories) async {
     final preferences = AppPreferencesScope.of(context);
-    final strings = AppStrings.of(context);
     final budgets = <String, double?>{};
+    final expenses = _monthlyExpenses(_transactions);
 
     for (final category in categories) {
       final value = _controllers[category]!.text.trim();
@@ -157,9 +159,19 @@ class _BudgetScreenState extends State<BudgetScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(strings.budgetsSaved)));
+    var exceededCount = 0;
+    for (final category in categories) {
+      final limit = budgets[category];
+      if (limit == null || limit <= 0) {
+        continue;
+      }
+      final spent = expenses[category] ?? 0;
+      if (spent > limit) {
+        exceededCount++;
+      }
+    }
+
+    widget.onSaved?.call(exceededCount);
   }
 
   Map<String, double> _monthlyExpenses(List<TransactionRecord> transactions) {

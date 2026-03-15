@@ -49,6 +49,37 @@ class _AppShellScreenState extends State<AppShellScreen> {
     );
   }
 
+  void _handleBudgetSaved(int exceededCount) {
+    _navigationController.changeTab(0);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      final strings = AppStrings.of(context);
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: Text(strings.budgetCheckResultTitle),
+            content: Text(
+              exceededCount > 0
+                  ? strings.overBudgetDescription(exceededCount)
+                  : strings.noBudgetExceededMessage,
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(strings.doneLabel),
+              ),
+            ],
+          );
+        },
+      );
+    });
+  }
+
   Scaffold _buildMobileScaffold() {
     final strings = AppStrings.of(context);
 
@@ -59,7 +90,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
           const DashboardScreen(),
           _PlaceholderTab(title: strings.transactionsLabel),
           const SizedBox.shrink(),
-          const SettingsScreen(),
+          SettingsScreen(onBudgetSaved: _handleBudgetSaved),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -185,7 +216,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                 const DashboardScreen(),
                 _PlaceholderTab(title: strings.transactionsLabel),
                 const SizedBox.shrink(),
-                const SettingsScreen(),
+                SettingsScreen(onBudgetSaved: _handleBudgetSaved),
               ],
             ),
           ),

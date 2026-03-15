@@ -143,7 +143,9 @@ class _PinDialogState extends State<_PinDialog> {
 // ---------------------------------------------------------------------------
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.onBudgetSaved});
+
+  final ValueChanged<int>? onBudgetSaved;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -443,7 +445,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
           appBar: AppBar(title: Text(strings.budgetScreenTitle)),
-          body: const BudgetScreen(),
+          body: BudgetScreen(
+            onSaved: (exceededCount) {
+              Navigator.of(context).pop();
+              widget.onBudgetSaved?.call(exceededCount);
+            },
+          ),
         ),
       ),
     );
@@ -484,6 +491,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(strings.exportSuccess(file.path))));
+
+      // Open immediately so user can view the exported file on emulator.
+      await _openLastFile();
     } catch (error) {
       if (!mounted) {
         return;

@@ -92,6 +92,11 @@ class AppStrings {
   String get limitAmount => _isVi ? 'Hạn mức' : 'Limit';
   String get saveBudgets => _isVi ? 'Lưu hạn mức' : 'Save budgets';
   String get budgetsSaved => _isVi ? 'Đã lưu hạn mức.' : 'Budgets saved.';
+  String get budgetCheckResultTitle =>
+      _isVi ? 'Kết quả kiểm tra hạn mức' : 'Budget status';
+  String get noBudgetExceededMessage => _isVi
+      ? 'Chưa có danh mục nào vượt hạn mức trong tháng này.'
+      : 'No category exceeds the budget this month.';
   String get noExpenseCategories => _isVi
       ? 'Chưa có danh mục chi tiêu để thiết lập hạn mức.'
       : 'No expense categories available for budgeting.';
