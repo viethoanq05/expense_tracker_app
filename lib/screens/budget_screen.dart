@@ -130,9 +130,26 @@ class BudgetScreen extends StatelessWidget {
             ),
 
             SizedBox(
-              height: 200,
+              height: 220,
               child: LineChart(
                 LineChartData(
+                  titlesData: FlTitlesData(
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 1,
+                        getTitlesWidget: (value, meta) {
+                          return Text(value.toInt().toString());
+                        },
+                      ),
+                    ),
+                  ),
                   lineBarsData: [
                     LineChartBarData(
                       spots: BudgetScreen.buildLineSpots(
