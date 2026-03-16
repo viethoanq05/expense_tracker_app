@@ -10,17 +10,16 @@ class BudgetScreen extends StatelessWidget {
   static List<FlSpot> buildLineSpots(
       List<TransactionRecord> transactions, TransactionType type) {
     final Map<int, double> dailyTotals = {};
-
+    final List<int> days = [];
     for (var tx in transactions) {
       if (tx.type == type) {
         final day = tx.date.day;
         dailyTotals[day] = (dailyTotals[day] ?? 0) + tx.amount;
+        if (!days.contains(day)) days.add(day);
       }
     }
-
-    return dailyTotals.entries
-        .map((e) => FlSpot(e.key.toDouble(), e.value))
-        .toList();
+    days.sort();
+    return days.map((day) => FlSpot(day.toDouble(), dailyTotals[day] ?? 0)).toList();
   }
 
   @override
@@ -133,6 +132,8 @@ class BudgetScreen extends StatelessWidget {
               height: 220,
               child: LineChart(
                 LineChartData(
+                  minX: transactions.isEmpty ? 0 : transactions.map((tx) => tx.date.day.toDouble()).reduce((a, b) => a < b ? a : b) - 1,
+                  maxX: transactions.isEmpty ? 31 : transactions.map((tx) => tx.date.day.toDouble()).reduce((a, b) => a > b ? a : b) + 2,
                   titlesData: FlTitlesData(
                     topTitles: AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
@@ -183,21 +184,25 @@ class BudgetScreen extends StatelessWidget {
               height: 200,
               child: BarChart(
                 BarChartData(
-                  barGroups: weekIncome.keys.map((week) {
-                    return BarChartGroupData(
-                      x: week,
-                      barRods: [
-                        BarChartRodData(
-                          toY: weekIncome[week] ?? 0,
-                          color: Colors.green,
-                        ),
-                        BarChartRodData(
-                          toY: weekExpense[week] ?? 0,
-                          color: Colors.red,
-                        ),
-                      ],
-                    );
-                  }).toList(),
+                  barGroups: (() {
+                    final weeks = {...weekIncome.keys, ...weekExpense.keys}.toList();
+                    weeks.sort();
+                    return weeks.map((week) {
+                      return BarChartGroupData(
+                        x: week,
+                        barRods: [
+                          BarChartRodData(
+                            toY: weekIncome[week] ?? 0,
+                            color: Colors.green,
+                          ),
+                          BarChartRodData(
+                            toY: weekExpense[week] ?? 0,
+                            color: Colors.red,
+                          ),
+                        ],
+                      );
+                    }).toList();
+                  })(),
                 ),
               ),
             ),

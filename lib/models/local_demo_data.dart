@@ -1,6 +1,6 @@
 import '../models/transaction_record.dart';
 
-final List<TransactionRecord> localDemoTransactions = [
+final List<TransactionRecord> localDemoTransactions = [ 
   TransactionRecord(
     id: 'local_001',
     title: 'Lương tháng',
@@ -40,6 +40,88 @@ final List<TransactionRecord> localDemoTransactions = [
     amount: 3500000,
     date: DateTime.now().subtract(const Duration(days: 7)),
     category: 'Housing',
+    type: TransactionType.expense,
+  ),
+  // Week 2
+  TransactionRecord(
+    id: 'local_006',
+    title: 'Ăn sáng',
+    amount: 30000,
+    date: DateTime.now().subtract(const Duration(days: 8)),
+    category: 'Food',
+    type: TransactionType.expense,
+  ),
+  TransactionRecord(
+    id: 'local_007',
+    title: 'Mua quà',
+    amount: 250000,
+    date: DateTime.now().subtract(const Duration(days: 9)),
+    category: 'Gift',
+    type: TransactionType.expense,
+  ),
+  TransactionRecord(
+    id: 'local_008',
+    title: 'Tiền thưởng',
+    amount: 500000,
+    date: DateTime.now().subtract(const Duration(days: 10)),
+    category: 'Bonus',
+    type: TransactionType.income,
+  ),
+  TransactionRecord(
+    id: 'local_009',
+    title: 'Đi cafe',
+    amount: 40000,
+    date: DateTime.now().subtract(const Duration(days: 11)),
+    category: 'Food',
+    type: TransactionType.expense,
+  ),
+  TransactionRecord(
+    id: 'local_010',
+    title: 'Tiền điện',
+    amount: 600000,
+    date: DateTime.now().subtract(const Duration(days: 12)),
+    category: 'Utilities',
+    type: TransactionType.expense,
+  ),
+  // Week 3
+  TransactionRecord(
+    id: 'local_011',
+    title: 'Ăn tối',
+    amount: 70000,
+    date: DateTime.now().subtract(const Duration(days: 15)),
+    category: 'Food',
+    type: TransactionType.expense,
+  ),
+  TransactionRecord(
+    id: 'local_012',
+    title: 'Mua đồ dùng',
+    amount: 180000,
+    date: DateTime.now().subtract(const Duration(days: 16)),
+    category: 'Shopping',
+    type: TransactionType.expense,
+  ),
+  TransactionRecord(
+    id: 'local_013',
+    title: 'Tiền thưởng',
+    amount: 800000,
+    date: DateTime.now().subtract(const Duration(days: 17)),
+    category: 'Bonus',
+    type: TransactionType.income,
+  ),
+  TransactionRecord(
+    id: 'local_014',
+    title: 'Đi nhậu',
+    amount: 150000,
+    date: DateTime.now().subtract(const Duration(days: 18)),
+    category: 'Entertainment',
+    type: TransactionType.expense,
+  ),
+  TransactionRecord(
+    id: 'local_015',
+    title: 'Tiền nước',
+    amount: 200000,
+    date: DateTime.now().subtract(const Duration(days: 19)),
+    category: 'Utilities',
     type: TransactionType.expense,
   ),
 ];
