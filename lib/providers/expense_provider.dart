@@ -2,14 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/transaction_record.dart';
 
+import '../models/local_demo_data.dart';
+import '../services/firestore_expense_repository.dart';
+
+
 class ExpenseProvider extends ChangeNotifier {
+  static Future<void> seedDemoData(ExpenseProvider provider) async {
+    final repo = FirestoreExpenseRepository();
+    final snapshot = await provider._firestore.collection('transactions').limit(1).get();
+    if (snapshot.docs.isEmpty) {
+      // Seed local data vào Firestore nếu Firestore trống
+      for (final tx in localDemoTransactions) {
+        await provider._firestore.collection('transactions').doc(tx.id).set({
+          'title': tx.title,
+          'amount': tx.amount,
+          'date': tx.date.toIso8601String(),
+          'category': tx.category,
+          'type': tx.type == TransactionType.income ? 'income' : 'expense',
+          'note': tx.note,
+        });
+      }
+    }
+    await provider.fetchTransactions();
+  }
   final FirebaseFirestore _firestore;
   List<TransactionRecord> _transactions = [];
 
   ExpenseProvider({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+      : _firestore = firestore ?? FirebaseFirestore.instance {
+    Future.microtask(() => ExpenseProvider.seedDemoData(this));
+  }
 
-  List<TransactionRecord> get transactions => _transactions;
+  List<TransactionRecord> get transactions => [...localDemoTransactions, ..._transactions];
 
   Future<void> fetchTransactions() async {
     final snapshot = await _firestore.collection('transactions').get();

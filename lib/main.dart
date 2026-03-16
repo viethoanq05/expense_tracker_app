@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:expense_tracker_app/screens/app_shell_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:expense_tracker_app/providers/expense_provider.dart';
-import 'package:expense_tracker_app/screens/statistics_screen.dart';
+import 'package:expense_tracker_app/screens/budget_screen.dart';
 import 'package:expense_tracker_app/services/firebase_bootstrap.dart';
 import 'package:expense_tracker_app/theme/app_theme.dart';
 
