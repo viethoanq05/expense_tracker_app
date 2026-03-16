@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:expense_tracker_app/localization/app_strings.dart';
 import 'package:expense_tracker_app/controllers/app_preferences_controller.dart';
 import 'package:expense_tracker_app/screens/budget_screen.dart';
+import 'package:expense_tracker_app/screens/export_preview_screen.dart';
 import 'package:expense_tracker_app/services/export_service.dart';
 import 'package:expense_tracker_app/services/repository_registry.dart';
 import 'package:expense_tracker_app/widgets/app_preferences_scope.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 
 // ---------------------------------------------------------------------------
@@ -369,20 +369,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _isExporting || _lastExportedFile == null
                               ? null
-                              : _openLastFile,
-                          icon: const Icon(Icons.insert_drive_file_outlined),
-                          label: Text(strings.openFileLabel),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _isExporting || _lastExportedFile == null
-                              ? null
                               : _shareLastFile,
                           icon: const Icon(Icons.share_rounded),
                           label: Text(strings.shareFileLabel),
@@ -477,9 +463,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final exportService = ExportService(RepositoryRegistry.expenseRepository);
 
     try {
-      final file = await exportService.exportTransactionsToCsv(
-        excelCompatible: excelCompatible,
-      );
+      final file = excelCompatible
+          ? await exportService.exportTransactionsToExcel()
+          : await exportService.exportTransactionsToCsv();
       if (!mounted) {
         return;
       }
@@ -492,8 +478,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(strings.exportSuccess(file.path))));
 
-      // Open immediately so user can view the exported file on emulator.
-      await _openLastFile();
+      await _openExportPreview(file: file, excelCompatible: excelCompatible);
     } catch (error) {
       if (!mounted) {
         return;
@@ -511,36 +496,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _openLastFile() async {
-    final strings = AppStrings.of(context);
-    final file = _lastExportedFile;
-    if (file == null) {
-      return;
-    }
-
-    try {
-      final result = await OpenFilex.open(file.path);
-      if (!mounted) {
-        return;
-      }
-
-      if (result.type != ResultType.done) {
-        final details = result.message.trim();
-        final suffix = details.isEmpty ? '' : ' $details';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${strings.openFileFailed}$suffix')),
-        );
-      }
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${strings.openFileFailed} ${error.toString()}'),
+  Future<void> _openExportPreview({
+    File? file,
+    bool excelCompatible = false,
+  }) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ExportPreviewScreen(
+          exportedFile: file ?? _lastExportedFile,
+          excelCompatible: excelCompatible,
         ),
-      );
-    }
+      ),
+    );
   }
 
   Future<void> _shareLastFile() async {

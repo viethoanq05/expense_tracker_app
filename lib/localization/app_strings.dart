@@ -110,6 +110,42 @@ class AppStrings {
   String get exportCsvLabel => _isVi ? 'Xuất CSV' : 'Export CSV';
   String get exportExcelLabel =>
       _isVi ? 'Xuất CSV mở bằng Excel' : 'Export Excel-compatible CSV';
+  String get exportToRealDeviceLabel =>
+      _isVi ? 'Xuất ra máy thật' : 'Export to real device';
+  String get uploadingToRealDeviceLabel =>
+      _isVi ? 'Đang upload lên link...' : 'Uploading for real device...';
+  String get exportHistoryTitle =>
+      _isVi ? 'Lịch sử link export' : 'Export link history';
+  String get exportHistoryEmpty =>
+      _isVi ? 'Chưa có link export nào.' : 'No exported links yet.';
+  String get exportHistoryLoadFailed =>
+      _isVi ? 'Không tải được lịch sử export.' : 'Cannot load export history.';
+  String exportHistoryDate(DateTime date) => _isVi
+      ? 'Tạo lúc ${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}'
+      : 'Created at ${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  String get exportPreviewLabel => _isVi ? 'Xem preview' : 'Preview in app';
+  String get exportPreviewTitle =>
+      _isVi ? 'Preview dữ liệu xuất' : 'Export preview';
+  String get downloadLabel => _isVi ? 'Tải về' : 'Download';
+  String get copyPullCommandLabel =>
+      _isVi ? 'Copy lệnh pull' : 'Copy pull command';
+  String get pullCommandCopiedSuccess =>
+      _isVi ? 'Đã copy lệnh kéo file về máy tính.' : 'Pull command copied.';
+  String downloadSaved(String path) =>
+      _isVi ? 'Đã tải file về: $path' : 'File downloaded to: $path';
+  String downloadFailed(String error) =>
+      _isVi ? 'Không tải được file: $error' : 'Cannot download file: $error';
+  String exportPreviewSubtitle(int count) =>
+      _isVi ? 'Tổng số dòng dữ liệu: $count' : 'Total exported rows: $count';
+  String get exportPreviewEmpty =>
+      _isVi ? 'Chưa có dữ liệu để preview.' : 'There is no data to preview.';
+  String get exportColumnId => 'ID';
+  String get exportColumnTitle => _isVi ? 'Tiêu đề' : 'Title';
+  String get exportColumnAmount => _isVi ? 'Số tiền' : 'Amount';
+  String get exportColumnDate => _isVi ? 'Ngày' : 'Date';
+  String get exportColumnCategory => _isVi ? 'Danh mục' : 'Category';
+  String get exportColumnType => _isVi ? 'Loại' : 'Type';
+  String get exportColumnNote => _isVi ? 'Ghi chú' : 'Note';
   String get openFolderLabel => _isVi ? 'Mở thư mục' : 'Open folder';
   String get openFileLabel => _isVi ? 'Mở file' : 'Open file';
   String get shareFileLabel => _isVi ? 'Chia sẻ file' : 'Share file';
@@ -122,6 +158,17 @@ class AppStrings {
       _isVi ? 'Không mở được file.' : 'Unable to open file.';
   String get shareFileFailed =>
       _isVi ? 'Không thể chia sẻ file.' : 'Unable to share file.';
+  String get exportLinkReadyTitle =>
+      _isVi ? 'Link tải file đã sẵn sàng' : 'Download link is ready';
+  String get exportLinkReadyDescription => _isVi
+      ? 'Mở hoặc sao chép link này trên máy thật để tải file export.'
+      : 'Open or copy this link on your real computer to download the export file.';
+  String get copyLinkLabel => _isVi ? 'Sao chép link' : 'Copy link';
+  String get openLinkLabel => _isVi ? 'Mở link' : 'Open link';
+  String get linkCopiedSuccess =>
+      _isVi ? 'Đã sao chép link tải file.' : 'Download link copied.';
+  String get copyFileNameLabel =>
+      _isVi ? 'Sao chép tên file' : 'Copy file name';
   String get exportingLabel => _isVi ? 'Đang xuất...' : 'Exporting...';
   String exportSuccess(String path) =>
       _isVi ? 'Đã xuất file tại: $path' : 'File exported to: $path';
