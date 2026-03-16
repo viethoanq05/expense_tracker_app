@@ -25,27 +25,51 @@ class TransactionsScreen extends StatelessWidget {
       }
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final horizontalPadding = screenWidth >= 1100
+        ? 64.0
+        : (screenWidth >= 760 ? 24.0 : 16.0);
+    const maxContentWidth = 1180.0;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Transactions')),
-      body: ListView.builder(
-        itemCount: transactions.length,
-        itemBuilder: (context, index) {
-          final tx = transactions[index];
-          return ListTile(
-            leading: Icon(
-              tx.type == TransactionType.income ? Icons.arrow_downward : Icons.arrow_upward,
-              color: tx.type == TransactionType.income ? Colors.green : Colors.red,
-            ),
-            title: Text(tx.title),
-            subtitle: Text('${tx.category} · ${tx.date.day}/${tx.date.month}/${tx.date.year}'),
-            trailing: Text(
-              (tx.type == TransactionType.income ? '+' : '-') + tx.amount.toStringAsFixed(0),
-              style: TextStyle(
-                color: tx.type == TransactionType.income ? Colors.green : Colors.red,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: maxContentWidth),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
+              child: ListView.builder(
+                itemCount: transactions.length,
+                itemBuilder: (context, index) {
+                  final tx = transactions[index];
+                  return ListTile(
+                    leading: Icon(
+                      tx.type == TransactionType.income
+                          ? Icons.arrow_downward
+                          : Icons.arrow_upward,
+                      color:
+                          tx.type == TransactionType.income ? Colors.green : Colors.red,
+                    ),
+                    title: Text(tx.title),
+                    subtitle: Text(
+                      '${tx.category} · ${tx.date.day}/${tx.date.month}/${tx.date.year}',
+                    ),
+                    trailing: Text(
+                      (tx.type == TransactionType.income ? '+' : '-') +
+                          tx.amount.toStringAsFixed(0),
+                      style: TextStyle(
+                        color: tx.type == TransactionType.income
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

@@ -56,159 +56,174 @@ class BudgetScreen extends StatelessWidget {
 
     final categoryList = categoryTotals.entries.toList();
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final horizontalPadding = screenWidth > 800 ? 64.0 : 16.0;
+    const contentMaxWidth = 1200.0;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Budget')),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-
-            Text(
-              'Thống kê chi tiêu',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              'Phân bổ chi tiêu theo danh mục',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-
-            const SizedBox(height: 16),
-
-            SizedBox(
-              height: 250,
-              child: PieChart(
-                PieChartData(
-                  sections: categoryList.asMap().entries.map((entry) {
-                    int i = entry.key;
-                    var e = entry.value;
-
-                    return PieChartSectionData(
-                      value: e.value,
-                      title: '',
-                      radius: 80,
-                      color: colors[i % colors.length],
-                    );
-                  }).toList(),
-                  centerSpaceRadius: 50,
-                ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: contentMaxWidth),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: 16,
               ),
-            ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 16),
+                  Text(
+                    'Thống kê chi tiêu',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Phân bổ chi tiêu theo danh mục',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 250,
+                    child: PieChart(
+                      PieChartData(
+                        sections:
+                            categoryList.asMap().entries.map((entry) {
+                          int i = entry.key;
+                          var e = entry.value;
 
-            const SizedBox(height: 16),
-
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: categoryList.asMap().entries.map((entry) {
-                int i = entry.key;
-                var e = entry.value;
-
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      color: colors[i % colors.length],
-                    ),
-                    const SizedBox(width: 6),
-                    Text("${e.key} (${e.value.toStringAsFixed(0)})"),
-                  ],
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 32),
-
-            Text(
-              'Xu hướng chi tiêu theo ngày',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-
-            SizedBox(
-              height: 220,
-              child: LineChart(
-                LineChartData(
-                  minX: transactions.isEmpty ? 0 : transactions.map((tx) => tx.date.day.toDouble()).reduce((a, b) => a < b ? a : b) - 1,
-                  maxX: transactions.isEmpty ? 31 : transactions.map((tx) => tx.date.day.toDouble()).reduce((a, b) => a > b ? a : b) + 2,
-                  titlesData: FlTitlesData(
-                    topTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: 1,
-                        getTitlesWidget: (value, meta) {
-                          return Text(value.toInt().toString());
-                        },
+                          return PieChartSectionData(
+                            value: e.value,
+                            title: '',
+                            radius: 80,
+                            color: colors[i % colors.length],
+                          );
+                        }).toList(),
+                        centerSpaceRadius: 50,
                       ),
                     ),
                   ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: BudgetScreen.buildLineSpots(
-                          transactions, TransactionType.expense),
-                      isCurved: true,
-                      color: Colors.red,
-                      dotData: FlDotData(show: false),
-                      barWidth: 3,
-                    ),
-                    LineChartBarData(
-                      spots: BudgetScreen.buildLineSpots(
-                          transactions, TransactionType.income),
-                      isCurved: true,
-                      color: Colors.green,
-                      dotData: FlDotData(show: false),
-                      barWidth: 3,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: categoryList.asMap().entries.map((entry) {
+                      int i = entry.key;
+                      var e = entry.value;
 
-            const SizedBox(height: 32),
-
-            Text(
-              'So sánh thu chi theo tuần',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-
-            SizedBox(
-              height: 200,
-              child: BarChart(
-                BarChartData(
-                  barGroups: (() {
-                    final weeks = {...weekIncome.keys, ...weekExpense.keys}.toList();
-                    weeks.sort();
-                    return weeks.map((week) {
-                      return BarChartGroupData(
-                        x: week,
-                        barRods: [
-                          BarChartRodData(
-                            toY: weekIncome[week] ?? 0,
-                            color: Colors.green,
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            color: colors[i % colors.length],
                           ),
-                          BarChartRodData(
-                            toY: weekExpense[week] ?? 0,
-                            color: Colors.red,
-                          ),
+                          const SizedBox(width: 6),
+                          Text("${e.key} (${e.value.toStringAsFixed(0)})"),
                         ],
                       );
-                    }).toList();
-                  })(),
-                ),
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Xu hướng chi tiêu theo ngày',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  SizedBox(
+                    height: 220,
+                    child: LineChart(
+                      LineChartData(
+                        minX: transactions.isEmpty
+                            ? 0
+                            : transactions
+                                    .map((tx) => tx.date.day.toDouble())
+                                    .reduce((a, b) => a < b ? a : b) -
+                                1,
+                        maxX: transactions.isEmpty
+                            ? 31
+                            : transactions
+                                    .map((tx) => tx.date.day.toDouble())
+                                    .reduce((a, b) => a > b ? a : b) +
+                                2,
+                        titlesData: FlTitlesData(
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              interval: 1,
+                              getTitlesWidget: (value, meta) {
+                                return Text(value.toInt().toString());
+                              },
+                            ),
+                          ),
+                        ),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: BudgetScreen.buildLineSpots(
+                                transactions, TransactionType.expense),
+                            isCurved: true,
+                            color: Colors.red,
+                            dotData: FlDotData(show: false),
+                            barWidth: 3,
+                          ),
+                          LineChartBarData(
+                            spots: BudgetScreen.buildLineSpots(
+                                transactions, TransactionType.income),
+                            isCurved: true,
+                            color: Colors.green,
+                            dotData: FlDotData(show: false),
+                            barWidth: 3,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    'So sánh thu chi theo tuần',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  SizedBox(
+                    height: 200,
+                    child: BarChart(
+                      BarChartData(
+                        barGroups: (() {
+                          final weeks =
+                              {...weekIncome.keys, ...weekExpense.keys}
+                                  .toList();
+                          weeks.sort();
+                          return weeks.map((week) {
+                            return BarChartGroupData(
+                              x: week,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: weekIncome[week] ?? 0,
+                                  color: Colors.green,
+                                ),
+                                BarChartRodData(
+                                  toY: weekExpense[week] ?? 0,
+                                  color: Colors.red,
+                                ),
+                              ],
+                            );
+                          }).toList();
+                        })(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
             ),
-
-            const SizedBox(height: 32),
-          ],
+          ),
         ),
       ),
     );

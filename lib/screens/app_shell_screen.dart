@@ -3,7 +3,6 @@ import 'package:expense_tracker_app/screens/dashboard_screen.dart';
 import 'package:expense_tracker_app/screens/transactions_screen.dart';
 import 'package:expense_tracker_app/screens/setting_screen.dart';
 import 'package:expense_tracker_app/screens/budget_screen.dart';
-import 'package:expense_tracker_app/screens/setting_screen.dart';
 import 'package:flutter/material.dart';
 
 class AppShellScreen extends StatefulWidget {
