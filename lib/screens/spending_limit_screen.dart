@@ -4,16 +4,16 @@ import 'package:expense_tracker_app/services/repository_registry.dart';
 import 'package:expense_tracker_app/widgets/app_preferences_scope.dart';
 import 'package:flutter/material.dart';
 
-class BudgetLimitScreen extends StatefulWidget {
-  const BudgetLimitScreen({super.key, this.onSaved});
+class SpendingLimitScreen extends StatefulWidget {
+  const SpendingLimitScreen({super.key, this.onSaved});
 
   final ValueChanged<int>? onSaved;
 
   @override
-  State<BudgetLimitScreen> createState() => _BudgetLimitScreenState();
+  State<SpendingLimitScreen> createState() => _SpendingLimitScreenState();
 }
 
-class _BudgetLimitScreenState extends State<BudgetLimitScreen> {
+class _SpendingLimitScreenState extends State<SpendingLimitScreen> {
   bool _isLoading = true;
   String? _error;
   List<TransactionRecord> _transactions = const [];
