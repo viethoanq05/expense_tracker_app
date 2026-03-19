@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:expense_tracker_app/localization/app_strings.dart';
 import 'package:expense_tracker_app/controllers/app_preferences_controller.dart';
-import 'package:expense_tracker_app/screens/budget_screen.dart';
+import 'package:expense_tracker_app/screens/spending_limit_screen.dart';
 import 'package:expense_tracker_app/screens/export_preview_screen.dart';
 import 'package:expense_tracker_app/services/export_service.dart';
 import 'package:expense_tracker_app/services/repository_registry.dart';
@@ -431,7 +431,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
           appBar: AppBar(title: Text(strings.budgetScreenTitle)),
-          body: const BudgetScreen(),
+          body: SpendingLimitScreen(
+            onSaved: (exceededCount) {
+              Navigator.of(context).pop();
+              widget.onBudgetSaved?.call(exceededCount);
+            },
+          ),
         ),
       ),
     );
