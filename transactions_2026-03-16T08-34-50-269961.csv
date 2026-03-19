@@ -1,0 +1,16 @@
+ID,Title,Amount,Date,Category,Type,Note
+tx_1773587434217,Tiền điện,1000000,2026-03-15T22:10:13.586937,Housing,expense,
+tx_1773586792726,Tien Nuoc,200000,2026-03-15T21:59:30.338,Housing,expense,
+tx_1773585625399,kem ốc quế,10000,2026-03-15T21:40:06.775206,Food,expense,vị siêu ngon
+tx_1773585459540,bánh mỳ,10000,2026-03-15T21:37:27.070540,Food,expense,
+tx_1773585300367,tiền lương,25000000,2026-03-15T21:34:34.029257,Salary,income,
+tx_demo_002,An trua van phong,84000,2026-03-14T13:01:04.566,Food,expense,
+tx_demo_003,Cafe hop nhom,58000,2026-03-13T13:01:04.566,Food,expense,
+tx_demo_004,Di chuyen,124000,2026-03-12T13:01:04.566,Transport,expense,
+tx_demo_005,Mua do gia dung,332000,2026-03-11T13:01:04.566,Shopping,expense,
+tx_demo_006,Freelance sprint UI,2100000,2026-03-09T13:01:04.566,Freelance,income,
+tx_demo_007,Tien nha,3500000,2026-03-05T13:01:04.566,Housing,expense,
+tx_demo_008,Netflix,260000,2026-03-04T13:01:04.566,Subscription,expense,
+tx_demo_001,Luong thang nay,18500000,2026-03-01T00:00:00.000,Salary,income,Cong ty ABC
+tx_1773585134875,Pizza,70000,2026-02-10T21:30:00.000,Food,expense,
+tx_1773587508800,Đèn học,100000,2026-02-04T14:19:00.000,Shopping,expense,

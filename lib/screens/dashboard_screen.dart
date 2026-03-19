@@ -1,10 +1,13 @@
 import 'dart:math' as math;
 
+import 'package:expense_tracker_app/controllers/app_preferences_controller.dart';
+import 'package:expense_tracker_app/localization/app_strings.dart';
 import 'package:expense_tracker_app/models/expense_filter.dart';
 import 'package:expense_tracker_app/models/transaction_record.dart';
 import 'package:expense_tracker_app/screens/transaction_detail_sheet.dart';
 import 'package:expense_tracker_app/services/repository_registry.dart';
 import 'package:flutter/foundation.dart';
+import 'package:expense_tracker_app/widgets/app_preferences_scope.dart';
 import 'package:flutter/material.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -70,6 +73,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final preferences = AppPreferencesScope.of(context);
+    final strings = AppStrings.of(context);
     final now = DateTime.now();
     final monthlyTransactions = _transactionsInMonth(now, _allTransactions);
     final monthlyIncome = _sumByType(
@@ -83,6 +88,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final monthlyBalance = monthlyIncome - monthlyExpense;
     final recentTransactions = _latestTransactions(_allTransactions);
     final availableCategories = _availableCategories(_allTransactions);
+    final exceededBudgets = _exceededBudgets(
+      transactions: monthlyTransactions,
+      preferences: preferences,
+    );
 
     return SafeArea(
       child: LayoutBuilder(
@@ -122,6 +131,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _ErrorCard(
                               error: _loadError!,
                               onRetry: _loadTransactions,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          if (exceededBudgets.isNotEmpty) ...[
+                            _BudgetAlertCard(
+                              exceededBudgets: exceededBudgets,
+                              strings: strings,
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -254,6 +270,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final textTheme = Theme.of(context).textTheme;
 
     return Row(
@@ -263,7 +280,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'TH5 - Nhom 12',
+                strings.appTitle,
                 style:
                     (compact ? textTheme.titleLarge : textTheme.headlineSmall)
                         ?.copyWith(fontWeight: FontWeight.w700),
@@ -280,7 +297,7 @@ class _Header extends StatelessWidget {
         ),
         IconButton(
           onPressed: onOpenSearch,
-          tooltip: 'Search and filter',
+          tooltip: strings.searchAndFilterTooltip,
           icon: const Icon(Icons.search_rounded),
         ),
         CircleAvatar(
@@ -339,6 +356,7 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final preview = _applyFilter(
       widget.sourceTransactions,
       ExpenseFilter(
@@ -372,7 +390,7 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
               autofocus: true,
               onChanged: (value) => setState(() => _query = value.trim()),
               decoration: InputDecoration(
-                hintText: 'Search by content, note, category...',
+                hintText: strings.searchHint,
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _query.isEmpty
                     ? null
@@ -389,12 +407,12 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
           actions: [
             IconButton(
               onPressed: _openFilterSheet,
-              tooltip: 'Open filters',
+              tooltip: strings.openFiltersTooltip,
               icon: const Icon(Icons.tune_rounded),
             ),
             IconButton(
               onPressed: _reset,
-              tooltip: 'Reset filters',
+              tooltip: strings.resetFiltersTooltip,
               icon: const Icon(Icons.refresh_rounded),
             ),
           ],
@@ -423,7 +441,7 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Matched transactions: ${preview.length}',
+                    strings.matchedTransactions(preview.length),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -434,7 +452,7 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Text(
-                          'No transactions found with current filters.',
+                          strings.noTransactionsForFilter,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
@@ -483,6 +501,7 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
   }
 
   Future<void> _openFilterSheet() async {
+    final strings = AppStrings.of(context);
     var localTimeFilter = _timeFilter;
     var localAmountFilter = _amountFilter;
     var localCategory = _category;
@@ -506,7 +525,7 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Filter criteria',
+                    strings.filterCriteria,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -609,7 +628,7 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
                               localCategory = widget.allCategoriesLabel;
                             });
                           },
-                          child: const Text('Reset'),
+                          child: Text(strings.resetLabel),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -623,7 +642,7 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
                             });
                             Navigator.of(context).pop();
                           },
-                          child: const Text('Done'),
+                          child: Text(strings.doneLabel),
                         ),
                       ),
                     ],
@@ -701,6 +720,8 @@ class _LoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -714,7 +735,7 @@ class _LoadingCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Loading transactions from Firestore...',
+                strings.loadingTransactions,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
@@ -733,6 +754,8 @@ class _ErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -740,7 +763,7 @@ class _ErrorCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Cannot load Firestore data.',
+              strings.cannotLoadTransactions,
               style: Theme.of(
                 context,
               ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
@@ -756,7 +779,7 @@ class _ErrorCard extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(strings.retryLabel),
             ),
           ],
         ),
@@ -778,6 +801,7 @@ class _SummaryPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final isCompact = MediaQuery.sizeOf(context).width < 360;
 
     return DecoratedBox(
@@ -793,7 +817,7 @@ class _SummaryPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Monthly Balance',
+              strings.monthlyBalance,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white.withValues(alpha: 0.95),
               ),
@@ -809,14 +833,14 @@ class _SummaryPanel extends StatelessWidget {
             const SizedBox(height: 14),
             if (isCompact) ...[
               _smallMetric(
-                'Total Income',
+                strings.totalIncome,
                 _currency(monthlyIncome),
                 const Color(0xFFDCFCE7),
                 const Color(0xFF14532D),
               ),
               const SizedBox(height: 10),
               _smallMetric(
-                'Total Expense',
+                strings.totalExpense,
                 _currency(monthlyExpense),
                 const Color(0xFFFFE4E6),
                 const Color(0xFF881337),
@@ -826,7 +850,7 @@ class _SummaryPanel extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _smallMetric(
-                      'Total Income',
+                      strings.totalIncome,
                       _currency(monthlyIncome),
                       const Color(0xFFDCFCE7),
                       const Color(0xFF14532D),
@@ -835,7 +859,7 @@ class _SummaryPanel extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _smallMetric(
-                      'Total Expense',
+                      strings.totalExpense,
                       _currency(monthlyExpense),
                       const Color(0xFFFFE4E6),
                       const Color(0xFF881337),
@@ -894,6 +918,7 @@ class _MonthlyReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final expenseByCategory = <String, double>{};
     for (final tx in monthlyTransactions) {
       if (tx.type == TransactionType.expense) {
@@ -916,14 +941,14 @@ class _MonthlyReportCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'This month report',
+              strings.thisMonthReport,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
             Text(
-              'Expense distribution by category',
+              strings.expenseDistributionByCategory,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -931,7 +956,7 @@ class _MonthlyReportCard extends StatelessWidget {
             const SizedBox(height: 14),
             if (topEntries.isEmpty)
               Text(
-                'No expenses this month yet.',
+                strings.noExpensesThisMonth,
                 style: Theme.of(context).textTheme.bodyMedium,
               )
             else
@@ -988,6 +1013,7 @@ class _RecentTransactionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
@@ -995,14 +1021,14 @@ class _RecentTransactionsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Recent Transactions',
+              strings.recentTransactions,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 2),
             Text(
-              'Showing latest 5 records',
+              strings.showingLatestRecords,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -1013,7 +1039,7 @@ class _RecentTransactionsCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(0, 18, 0, 22),
                 child: Center(
                   child: Text(
-                    'No transaction data available.',
+                    strings.noTransactionData,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
@@ -1116,4 +1142,110 @@ String _dateLabel(DateTime date) {
     return 'Yesterday';
   }
   return '${date.day}/${date.month}/${date.year}';
+}
+
+Map<String, double> _categoryExpenses(List<TransactionRecord> transactions) {
+  final values = <String, double>{};
+
+  for (final transaction in transactions) {
+    if (transaction.type != TransactionType.expense) {
+      continue;
+    }
+
+    values.update(
+      transaction.category,
+      (value) => value + transaction.amount,
+      ifAbsent: () => transaction.amount,
+    );
+  }
+
+  return values;
+}
+
+List<_ExceededBudget> _exceededBudgets({
+  required List<TransactionRecord> transactions,
+  required AppPreferencesController preferences,
+}) {
+  final expenses = _categoryExpenses(transactions);
+  final exceeded = <_ExceededBudget>[];
+
+  for (final entry in expenses.entries) {
+    final limit = preferences.budgetFor(entry.key);
+    if (limit == null || limit <= 0 || entry.value <= limit) {
+      continue;
+    }
+
+    exceeded.add(
+      _ExceededBudget(category: entry.key, spent: entry.value, limit: limit),
+    );
+  }
+
+  exceeded.sort((a, b) => (b.spent - b.limit).compareTo(a.spent - a.limit));
+  return exceeded;
+}
+
+class _ExceededBudget {
+  const _ExceededBudget({
+    required this.category,
+    required this.spent,
+    required this.limit,
+  });
+
+  final String category;
+  final double spent;
+  final double limit;
+}
+
+class _BudgetAlertCard extends StatelessWidget {
+  const _BudgetAlertCard({
+    required this.exceededBudgets,
+    required this.strings,
+  });
+
+  final List<_ExceededBudget> exceededBudgets;
+  final AppStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: const Color(0xFFFFE5E5),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              strings.overBudgetTitle,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF8B1E1E),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              strings.overBudgetDescription(exceededBudgets.length),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF8B1E1E)),
+            ),
+            const SizedBox(height: 12),
+            ...exceededBudgets
+                .take(3)
+                .map(
+                  (budget) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      '${budget.category}: ${_currency(budget.spent)} / ${_currency(budget.limit)}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF8B1E1E),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
 }

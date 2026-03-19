@@ -203,16 +203,16 @@ class FirestoreExpenseRepository implements ExpenseRepository {
     return [
       TransactionRecord(
         id: 'tx_demo_001',
-        title: 'Luong thang nay',
+        title: 'Lương tháng này',
         amount: 18500000,
         date: DateTime(now.year, now.month, 1),
         category: 'Salary',
         type: TransactionType.income,
-        note: 'Cong ty ABC',
+        note: 'Công ty ABC',
       ),
       TransactionRecord(
         id: 'tx_demo_002',
-        title: 'An trua van phong',
+        title: 'Ăn trưa văn phòng',
         amount: 85000,
         date: now.subtract(const Duration(days: 1)),
         category: 'Food',
@@ -220,7 +220,7 @@ class FirestoreExpenseRepository implements ExpenseRepository {
       ),
       TransactionRecord(
         id: 'tx_demo_003',
-        title: 'Cafe hop nhom',
+        title: 'Cafe họp nhóm',
         amount: 58000,
         date: now.subtract(const Duration(days: 2)),
         category: 'Food',
@@ -228,7 +228,7 @@ class FirestoreExpenseRepository implements ExpenseRepository {
       ),
       TransactionRecord(
         id: 'tx_demo_004',
-        title: 'Di chuyen',
+        title: 'Di chuyển',
         amount: 124000,
         date: now.subtract(const Duration(days: 3)),
         category: 'Transport',
@@ -236,7 +236,7 @@ class FirestoreExpenseRepository implements ExpenseRepository {
       ),
       TransactionRecord(
         id: 'tx_demo_005',
-        title: 'Mua do gia dung',
+        title: 'Mua đồ gia dụng',
         amount: 332000,
         date: now.subtract(const Duration(days: 4)),
         category: 'Shopping',
@@ -252,7 +252,7 @@ class FirestoreExpenseRepository implements ExpenseRepository {
       ),
       TransactionRecord(
         id: 'tx_demo_007',
-        title: 'Tien nha',
+        title: 'Tiền nhà',
         amount: 3500000,
         date: now.subtract(const Duration(days: 10)),
         category: 'Housing',
