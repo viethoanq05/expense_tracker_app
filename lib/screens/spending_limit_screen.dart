@@ -69,7 +69,9 @@ class _SpendingLimitScreenState extends State<SpendingLimitScreen> {
     final strings = AppStrings.of(context);
     final preferences = AppPreferencesScope.of(context);
     final expenses = _monthlyExpenses(_transactions);
-    final categories = expenses.keys.toList()..sort();
+    
+    const categoriesToTrack = ['Food', 'Housing', 'Shopping', 'Transport'];
+    final categories = categoriesToTrack.toList()..sort();
 
     for (final category in categories) {
       _controllers.putIfAbsent(
@@ -203,6 +205,19 @@ class _SpendingLimitScreenState extends State<SpendingLimitScreen> {
     }
     return value.toStringAsFixed(0);
   }
+
+  static String _translateCategory(String category, BuildContext context) {
+    if (AppStrings.of(context).language == AppLanguage.vi) {
+      return switch (category) {
+        'Food' => 'Ăn uống',
+        'Housing' => 'Nhà cửa',
+        'Shopping' => 'Mua sắm',
+        'Transport' => 'Di chuyển',
+        _ => category,
+      };
+    }
+    return category;
+  }
 }
 
 class _BudgetCategoryCard extends StatelessWidget {
@@ -240,7 +255,7 @@ class _BudgetCategoryCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    category,
+                    _SpendingLimitScreenState._translateCategory(category, context),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),

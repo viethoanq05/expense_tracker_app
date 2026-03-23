@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../models/transaction_record.dart';
+import '../localization/app_strings.dart';
+import '../widgets/app_preferences_scope.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class StatisticsScreen extends StatelessWidget {
@@ -26,26 +28,27 @@ class StatisticsScreen extends StatelessWidget {
       }
     }
 
+    final strings = AppStrings.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Thống kê chi tiêu')),
+      appBar: AppBar(title: Text(strings.thisMonthReport)),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: 16),
-            Text('Phân bổ chi tiêu theo danh mục', style: Theme.of(context).textTheme.titleMedium),
+            Text(strings.expenseDistributionByCategory, style: Theme.of(context).textTheme.titleMedium),
             SizedBox(
               height: 200,
               child: PieChart(
                 PieChartData(
                   sections: categoryTotals.entries.map((e) => PieChartSectionData(
                     value: e.value,
-                    title: e.key,
+                    title: _translateCategory(e.key, context),
                   )).toList(),
                 ),
               ),
             ),
             const SizedBox(height: 32),
-            Text('So sánh thu chi theo tuần', style: Theme.of(context).textTheme.titleMedium),
+            Text(strings.thisMonthReport, style: Theme.of(context).textTheme.titleMedium),
             SizedBox(
               height: 200,
               child: BarChart(
@@ -64,6 +67,19 @@ class StatisticsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _translateCategory(String category, BuildContext context) {
+    if (AppStrings.of(context).language == AppLanguage.vi) {
+      return switch (category) {
+        'Food' => 'Ăn uống',
+        'Housing' => 'Nhà cửa',
+        'Shopping' => 'Mua sắm',
+        'Transport' => 'Di chuyển',
+        _ => category,
+      };
+    }
+    return category;
   }
 }
 

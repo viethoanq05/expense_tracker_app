@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key, this.refreshNotifier});
 
-  final ValueListenable<int>? refreshNotifier;
+  final ValueNotifier<int>? refreshNotifier;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -87,7 +87,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     final monthlyBalance = monthlyIncome - monthlyExpense;
     final recentTransactions = _latestTransactions(_allTransactions);
-    final availableCategories = _availableCategories(_allTransactions);
+    final availableCategories = _availableCategories(_allTransactions, strings);
     final exceededBudgets = _exceededBudgets(
       transactions: monthlyTransactions,
       preferences: preferences,
@@ -118,9 +118,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Column(
                         children: [
                           _Header(
-                            monthLabel: _monthLabel(now),
+                            monthLabel: _monthLabel(now, strings),
                             onOpenSearch: () =>
-                                _openSearchPage(availableCategories),
+                                _openSearchPage(availableCategories, strings),
                             compact: !isTablet,
                           ),
                           const SizedBox(height: 16),
@@ -181,7 +181,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 18),
                           _RecentTransactionsCard(
                             transactions: recentTransactions,
-                            onDataChanged: _loadTransactions,
+                            onDataChanged: () {
+                              _loadTransactions();
+                              widget.refreshNotifier?.value++;
+                            },
                           ),
                         ],
                       ),
@@ -210,18 +213,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return sorted.take(5).toList(growable: false);
   }
 
-  List<String> _availableCategories(List<TransactionRecord> source) {
+  List<String> _availableCategories(List<TransactionRecord> source, AppStrings strings) {
     final categories = source.map((tx) => tx.category).toSet().toList()..sort();
-    return [ExpenseFilter.allCategories, ...categories];
+    return [strings.allCategories, ...categories];
   }
 
-  Future<void> _openSearchPage(List<String> categories) async {
+  Future<void> _openSearchPage(List<String> categories, AppStrings strings) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => _DashboardSearchPage(
-          initialFilter: const ExpenseFilter(),
+          initialFilter: ExpenseFilter(category: strings.allCategories),
           categories: categories,
-          allCategoriesLabel: ExpenseFilter.allCategories,
+          allCategoriesLabel: strings.allCategories,
           sourceTransactions: _allTransactions,
         ),
       ),
@@ -237,23 +240,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .fold(0, (value, tx) => value + tx.amount);
   }
 
-  String _monthLabel(DateTime date) {
-    const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-
-    return '${monthNames[date.month - 1]} ${date.year}';
+  String _monthLabel(DateTime date, AppStrings strings) {
+    return '${strings.getMonthName(date.month)} ${date.year}';
   }
 }
 
@@ -429,14 +417,14 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
                     runSpacing: 8,
                     children: [
                       _FilterInfoChip(
-                        label: _amountLabel(_amountFilter).$1,
-                        value: _amountLabel(_amountFilter).$2,
+                        label: strings.amountLabel,
+                        value: strings.getAmountFilterLabel(_amountFilter),
                       ),
                       _FilterInfoChip(
-                        label: 'Time',
-                        value: _timeLabel(_timeFilter),
+                        label: strings.timeLabel,
+                        value: strings.getTimeFilterLabel(_timeFilter),
                       ),
-                      _FilterInfoChip(label: 'Category', value: _category),
+                      _FilterInfoChip(label: strings.categoryLabel, value: _category),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -543,22 +531,22 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
                       labelText: 'Amount',
                       prefixIcon: Icon(Icons.attach_money_rounded),
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: AmountFilter.all,
-                        child: Text('All amounts'),
+                        child: Text(strings.getAmountFilterLabel(AmountFilter.all)),
                       ),
                       DropdownMenuItem(
                         value: AmountFilter.under200k,
-                        child: Text('Under 200K VND'),
+                        child: Text(strings.getAmountFilterLabel(AmountFilter.under200k)),
                       ),
                       DropdownMenuItem(
                         value: AmountFilter.from200kTo1m,
-                        child: Text('200K - 1M VND'),
+                        child: Text(strings.getAmountFilterLabel(AmountFilter.from200kTo1m)),
                       ),
                       DropdownMenuItem(
                         value: AmountFilter.over1m,
-                        child: Text('Over 1M VND'),
+                        child: Text(strings.getAmountFilterLabel(AmountFilter.over1m)),
                       ),
                     ],
                   ),
@@ -575,22 +563,22 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
                       labelText: 'Time',
                       prefixIcon: Icon(Icons.calendar_month_outlined),
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: TimeFilter.all,
-                        child: Text('All time'),
+                        child: Text(strings.getTimeFilterLabel(TimeFilter.all)),
                       ),
                       DropdownMenuItem(
                         value: TimeFilter.last7Days,
-                        child: Text('Last 7 days'),
+                        child: Text(strings.getTimeFilterLabel(TimeFilter.last7Days)),
                       ),
                       DropdownMenuItem(
                         value: TimeFilter.last30Days,
-                        child: Text('Last 30 days'),
+                        child: Text(strings.getTimeFilterLabel(TimeFilter.last30Days)),
                       ),
                       DropdownMenuItem(
                         value: TimeFilter.thisMonth,
-                        child: Text('This month'),
+                        child: Text(strings.getTimeFilterLabel(TimeFilter.thisMonth)),
                       ),
                     ],
                   ),
@@ -656,23 +644,12 @@ class _DashboardSearchPageState extends State<_DashboardSearchPage> {
     );
   }
 
-  String _timeLabel(TimeFilter filter) {
-    return switch (filter) {
-      TimeFilter.all => 'All time',
-      TimeFilter.last7Days => 'Last 7 days',
-      TimeFilter.last30Days => 'Last 30 days',
-      TimeFilter.thisMonth => 'This month',
-      TimeFilter.custom => 'Custom range',
-    };
+  String _timeLabel(TimeFilter filter, AppStrings strings) {
+    return strings.getTimeFilterLabel(filter);
   }
 
-  (String, String) _amountLabel(AmountFilter filter) {
-    return switch (filter) {
-      AmountFilter.all => ('Amount', 'All amounts'),
-      AmountFilter.under200k => ('Amount', 'Under 200K'),
-      AmountFilter.from200kTo1m => ('Amount', '200K - 1M'),
-      AmountFilter.over1m => ('Amount', 'Over 1M'),
-    };
+  String _amountLabel(AmountFilter filter, AppStrings strings) {
+    return strings.getAmountFilterLabel(filter);
   }
 }
 
@@ -824,7 +801,7 @@ class _SummaryPanel extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              _currency(monthlyBalance),
+              _currency(monthlyBalance, strings),
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
@@ -834,14 +811,14 @@ class _SummaryPanel extends StatelessWidget {
             if (isCompact) ...[
               _smallMetric(
                 strings.totalIncome,
-                _currency(monthlyIncome),
+                _currency(monthlyIncome, strings),
                 const Color(0xFFDCFCE7),
                 const Color(0xFF14532D),
               ),
               const SizedBox(height: 10),
               _smallMetric(
                 strings.totalExpense,
-                _currency(monthlyExpense),
+                _currency(monthlyExpense, strings),
                 const Color(0xFFFFE4E6),
                 const Color(0xFF881337),
               ),
@@ -851,7 +828,7 @@ class _SummaryPanel extends StatelessWidget {
                   Expanded(
                     child: _smallMetric(
                       strings.totalIncome,
-                      _currency(monthlyIncome),
+                      _currency(monthlyIncome, strings),
                       const Color(0xFFDCFCE7),
                       const Color(0xFF14532D),
                     ),
@@ -860,7 +837,7 @@ class _SummaryPanel extends StatelessWidget {
                   Expanded(
                     child: _smallMetric(
                       strings.totalExpense,
-                      _currency(monthlyExpense),
+                      _currency(monthlyExpense, strings),
                       const Color(0xFFFFE4E6),
                       const Color(0xFF881337),
                     ),
@@ -973,7 +950,7 @@ class _MonthlyReportCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              entry.key,
+                              _translateCategory(entry.key, strings),
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ),
@@ -1064,6 +1041,7 @@ class _TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final isIncome = tx.type == TransactionType.income;
     final amountColor = isIncome
         ? const Color(0xFF047857)
@@ -1097,14 +1075,14 @@ class _TransactionTile extends StatelessWidget {
       ),
       title: Text(tx.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
-        '${tx.category} · ${_dateLabel(tx.date)}',
+        '${_translateCategory(tx.category, strings)} · ${_dateLabel(tx.date, strings)}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 108),
         child: Text(
-          '${isIncome ? '+' : '-'} ${_currency(tx.amount)}',
+          '${isIncome ? '+' : '-'} ${_currency(tx.amount, strings)}',
           textAlign: TextAlign.end,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -1118,30 +1096,43 @@ class _TransactionTile extends StatelessWidget {
   }
 }
 
-String _currency(double amount) {
+String _currency(double amount, AppStrings strings) {
   final value = amount.abs();
   if (value >= 1000000) {
-    return '${(amount / 1000000).toStringAsFixed(2)}M VND';
+    return '${(amount / 1000000).toStringAsFixed(2)}M${strings.currencySuffix}';
   }
   if (value >= 1000) {
-    return '${(amount / 1000).toStringAsFixed(0)}K VND';
+    return '${(amount / 1000).toStringAsFixed(0)}K${strings.currencySuffix}';
   }
-  return '${amount.toStringAsFixed(0)} VND';
+  return '${amount.toStringAsFixed(0)}${strings.currencySuffix}';
 }
 
-String _dateLabel(DateTime date) {
+String _dateLabel(DateTime date, AppStrings strings) {
   final now = DateTime.now();
   final onlyDate = DateTime(date.year, date.month, date.day);
   final today = DateTime(now.year, now.month, now.day);
   final delta = today.difference(onlyDate).inDays;
 
   if (delta == 0) {
-    return 'Today';
+    return strings.today;
   }
   if (delta == 1) {
-    return 'Yesterday';
+    return strings.yesterday;
   }
   return '${date.day}/${date.month}/${date.year}';
+}
+
+String _translateCategory(String category, AppStrings strings) {
+  if (strings.language == AppLanguage.vi) {
+    return switch (category) {
+      'Food' => 'Ăn uống',
+      'Housing' => 'Nhà cửa',
+      'Shopping' => 'Mua sắm',
+      'Transport' => 'Di chuyển',
+      _ => category,
+    };
+  }
+  return category;
 }
 
 Map<String, double> _categoryExpenses(List<TransactionRecord> transactions) {
@@ -1235,7 +1226,7 @@ class _BudgetAlertCard extends StatelessWidget {
                   (budget) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      '${budget.category}: ${_currency(budget.spent)} / ${_currency(budget.limit)}',
+                      '${_translateCategory(budget.category, strings)}: ${_currency(budget.spent, strings)} / ${_currency(budget.limit, strings)}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: const Color(0xFF8B1E1E),
                         fontWeight: FontWeight.w600,

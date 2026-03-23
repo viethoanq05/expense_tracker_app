@@ -1,3 +1,4 @@
+import 'package:expense_tracker_app/models/expense_filter.dart';
 import 'package:expense_tracker_app/widgets/app_preferences_scope.dart';
 import 'package:flutter/material.dart';
 
@@ -217,4 +218,103 @@ class AppStrings {
   String get pinSavedSuccess => _isVi ? 'Đã lưu mã PIN.' : 'PIN saved.';
   String get pinRemovedSuccess => _isVi ? 'Đã xoá mã PIN.' : 'PIN removed.';
   String get pinCancelLabel => _isVi ? 'Huỷ' : 'Cancel';
+
+  // --- Transactions Screen ---
+  String get transactionsTabIncome => _isVi ? 'Thu nhập' : 'Income';
+  String get transactionsTabExpense => _isVi ? 'Chi tiêu' : 'Expense';
+  String get noTransactionsFound =>
+      _isVi ? 'Không tìm thấy giao dịch nào trong tháng này.' : 'No transactions found for this month.';
+  String get today => _isVi ? 'Hôm nay' : 'Today';
+  String get yesterday => _isVi ? 'Hôm qua' : 'Yesterday';
+  String get currencySuffix => _isVi ? ' đ' : ' VND';
+
+  // --- Add/Edit Transaction Screen ---
+  String get addTransactionTitle => _isVi ? 'Thêm giao dịch' : 'Add Transaction';
+  String get editTransactionTitle => _isVi ? 'Sửa giao dịch' : 'Edit Transaction';
+  String get saveLabel => _isVi ? 'Lưu' : 'Save';
+  String get amountLabel => _isVi ? 'Số tiền' : 'Amount';
+  String get titleLabel => _isVi ? 'Tiêu đề / Nội dung' : 'Title / Content';
+  String get categoryLabel => _isVi ? 'Danh mục' : 'Category';
+  String get dateTimeLabel => _isVi ? 'Ngày & Giờ' : 'Date & Time';
+  String get noteOptionalLabel => _isVi ? 'Ghi chú (Tùy chọn)' : 'Note (Optional)';
+  String get pleaseEnterAmount => _isVi ? 'Vui lòng nhập số tiền' : 'Please enter an amount';
+  String get invalidAmount => _isVi ? 'Số tiền không hợp lệ' : 'Invalid amount';
+  String get pleaseEnterTitle => _isVi ? 'Vui lòng nhập tiêu đề' : 'Please enter a title';
+  String get pleaseSelectCategory => _isVi ? 'Vui lòng chọn danh mục' : 'Please select a category';
+  String get failedToAddTransaction => _isVi ? 'Không thể thêm giao dịch' : 'Failed to add transaction';
+  String get failedToUpdateTransaction => _isVi ? 'Không thể cập nhật giao dịch' : 'Failed to update transaction';
+
+  // --- Transaction Details ---
+  String get transactionDetailsTitle => _isVi ? 'Chi tiết giao dịch' : 'Transaction Details';
+  String get deleteTransactionQuestion => _isVi ? 'Xoá giao dịch này?' : 'Delete Transaction?';
+  String get deleteUndoneWarning => _isVi ? 'Hành động này không thể hoàn tác.' : 'This action cannot be undone.';
+  String get deleteLabel => _isVi ? 'Xoá' : 'Delete';
+  String get editLabel => _isVi ? 'Sửa' : 'Edit';
+  String get couldNotLoadDetails => _isVi ? 'Không thể tải chi tiết giao dịch' : 'Could not load transaction details';
+  String get transactionNotFound => _isVi ? 'Không tìm thấy giao dịch' : 'Transaction not found';
+  String get failedToDelete => _isVi ? 'Xoá thất bại' : 'Failed to delete';
+  String get dailySpendingTrend => _isVi ? 'Biểu đồ chi tiêu theo ngày' : 'Daily Spending Trend';
+  String get monthlySpendingStats => _isVi ? 'Thống kê chi tiêu tháng' : 'Monthly Spending Stats';
+  String get categoryDistribution => _isVi ? 'Phân bổ chi tiêu theo 4 danh mục chính' : 'Spending distribution (4 categories)';
+  String get weeklyComparison => _isVi ? 'So sánh thu chi theo tuần' : 'Weekly Income vs Expense';
+  String get noDataForCategories => _isVi ? 'Chưa có dữ liệu cho 4 danh mục này.' : 'No data for these 4 categories.';
+  String get allCategories => _isVi ? 'Tất cả danh mục' : 'All categories';
+  String get timeLabel => _isVi ? 'Thời gian' : 'Time';
+
+  String getTimeFilterLabel(TimeFilter filter) {
+    if (_isVi) {
+      return switch (filter) {
+        TimeFilter.all => 'Tất cả thời gian',
+        TimeFilter.last7Days => '7 ngày qua',
+        TimeFilter.last30Days => '30 ngày qua',
+        TimeFilter.thisMonth => 'Tháng này',
+        TimeFilter.custom => 'Tùy chỉnh',
+      };
+    }
+    return switch (filter) {
+      TimeFilter.all => 'All time',
+      TimeFilter.last7Days => 'Last 7 days',
+      TimeFilter.last30Days => 'Last 30 days',
+      TimeFilter.thisMonth => 'This month',
+      TimeFilter.custom => 'Custom range',
+    };
+  }
+
+  String getAmountFilterLabel(AmountFilter filter) {
+    if (_isVi) {
+      return switch (filter) {
+        AmountFilter.all => 'Tất cả số tiền',
+        AmountFilter.under200k => 'Dưới 200K đ',
+        AmountFilter.from200kTo1m => '200K - 1M đ',
+        AmountFilter.over1m => 'Trên 1M đ',
+      };
+    }
+    return switch (filter) {
+      AmountFilter.all => 'All amounts',
+      AmountFilter.under200k => 'Under 200K VND',
+      AmountFilter.from200kTo1m => '200K - 1M VND',
+      AmountFilter.over1m => 'Over 1M VND',
+    };
+  }
+
+  String getMonthName(int month) {
+    if (_isVi) {
+      return 'Tháng $month';
+    }
+    return switch (month) {
+      1 => 'January',
+      2 => 'February',
+      3 => 'March',
+      4 => 'April',
+      5 => 'May',
+      6 => 'June',
+      7 => 'July',
+      8 => 'August',
+      9 => 'September',
+      10 => 'October',
+      11 => 'November',
+      12 => 'December',
+      _ => '',
+    };
+  }
 }

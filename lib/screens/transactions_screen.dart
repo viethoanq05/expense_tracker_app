@@ -2,12 +2,14 @@ import 'package:expense_tracker_app/models/transaction_record.dart';
 import 'package:expense_tracker_app/services/repository_registry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../localization/app_strings.dart';
+import '../widgets/app_preferences_scope.dart';
 import 'transaction_detail_sheet.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key, this.refreshNotifier});
 
-  final ValueListenable<int>? refreshNotifier;
+  final ValueNotifier<int>? refreshNotifier;
 
   @override
   State<TransactionsScreen> createState() => _TransactionsScreenState();
@@ -101,14 +103,15 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transactions'),
+        title: Text(strings.transactionsLabel),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Income'),
-            Tab(text: 'Expense'),
+          tabs: [
+            Tab(text: strings.transactionsTabIncome),
+            Tab(text: strings.transactionsTabExpense),
           ],
         ),
       ),
@@ -125,7 +128,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Failed to load data',
+                          strings.cannotLoadTransactions,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
@@ -134,7 +137,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         FilledButton.icon(
                           onPressed: _refresh,
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Retry'),
+                          label: Text(strings.retryLabel),
                         ),
                       ],
                     ),
@@ -158,8 +161,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
           final month = _availableMonths[index];
           final isSelected = month == _selectedMonth;
 
+          final strings = AppStrings.of(context);
           final monthLabel =
-              '${month.month.toString().padLeft(2, '0')}/${month.year}';
+              '${strings.getMonthName(month.month)} ${month.year}';
 
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
@@ -182,6 +186,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     final items = _filteredTransactions;
 
     if (items.isEmpty) {
+      final strings = AppStrings.of(context);
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -193,7 +198,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'No transactions found for this month.',
+              strings.noTransactionsFound,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -220,8 +225,10 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               useSafeArea: true,
               builder: (_) => TransactionDetailSheet(
                 transactionId: items[index].id,
-                onDataChanged:
-                    _refresh, // refresh list when edit/delete happens
+                onDataChanged: () {
+                  _refresh();
+                  widget.refreshNotifier?.value++;
+                },
               ),
             );
           },
@@ -230,6 +237,18 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     );
   }
 
+  static String _translateCategory(String category, BuildContext context) {
+    if (AppStrings.of(context).language == AppLanguage.vi) {
+      return switch (category) {
+        'Food' => 'Ăn uống',
+        'Housing' => 'Nhà cửa',
+        'Shopping' => 'Mua sắm',
+        'Transport' => 'Di chuyển',
+        _ => category,
+      };
+    }
+    return category;
+  }
 }
 
 class TransactionListTile extends StatelessWidget {
@@ -245,6 +264,8 @@ class TransactionListTile extends StatelessWidget {
         ? const Color(0xFF047857)
         : const Color(0xFFB91C1C);
 
+    final strings = AppStrings.of(context);
+
     return ListTile(
       onTap: onTap,
       leading: CircleAvatar(
@@ -258,14 +279,14 @@ class TransactionListTile extends StatelessWidget {
       ),
       title: Text(tx.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
-        '${tx.category} · ${_dateLabel(tx.date)}',
+        '${_TransactionsScreenState._translateCategory(tx.category, context)} · ${_dateLabel(tx.date, strings)}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 108),
         child: Text(
-          '${isIncome ? '+' : '-'} ${_currency(tx.amount)}',
+          '${isIncome ? '+' : '-'} ${_currency(tx.amount, strings)}',
           textAlign: TextAlign.end,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -278,25 +299,25 @@ class TransactionListTile extends StatelessWidget {
     );
   }
 
-  String _currency(double amount) {
+  String _currency(double amount, AppStrings strings) {
     final value = amount.abs();
     if (value >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(2)}M VND';
+      return '${(amount / 1000000).toStringAsFixed(2)}M${strings.currencySuffix}';
     }
     if (value >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(0)}K VND';
+      return '${(amount / 1000).toStringAsFixed(0)}K${strings.currencySuffix}';
     }
-    return '${amount.toStringAsFixed(0)} VND';
+    return '${amount.toStringAsFixed(0)}${strings.currencySuffix}';
   }
 
-  String _dateLabel(DateTime date) {
+  String _dateLabel(DateTime date, AppStrings strings) {
     final now = DateTime.now();
     final onlyDate = DateTime(date.year, date.month, date.day);
     final today = DateTime(now.year, now.month, now.day);
     final delta = today.difference(onlyDate).inDays;
 
-    if (delta == 0) return 'Today';
-    if (delta == 1) return 'Yesterday';
+    if (delta == 0) return strings.today;
+    if (delta == 1) return strings.yesterday;
     return '${date.day}/${date.month}/${date.year}';
   }
 }

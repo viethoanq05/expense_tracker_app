@@ -1,6 +1,7 @@
 import 'package:expense_tracker_app/models/transaction_record.dart';
 import 'package:expense_tracker_app/services/repository_registry.dart';
 import 'package:flutter/material.dart';
+import '../localization/app_strings.dart';
 
 import 'edit_transaction_screen.dart';
 
@@ -49,23 +50,25 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
       });
     } catch (e) {
       if (!mounted) return;
+      final strings = AppStrings.of(context);
       setState(() {
-        _error = 'Could not load transaction details: $e';
+        _error = '${strings.couldNotLoadDetails}: $e';
         _isLoading = false;
       });
     }
   }
 
   Future<void> _delete() async {
+    final strings = AppStrings.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Transaction?'),
-        content: const Text('This action cannot be undone.'),
+        title: Text(strings.deleteTransactionQuestion),
+        content: Text(strings.deleteUndoneWarning),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(strings.pinCancelLabel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -73,7 +76,7 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
               backgroundColor: Theme.of(context).colorScheme.error,
               foregroundColor: Theme.of(context).colorScheme.onError,
             ),
-            child: const Text('Delete'),
+            child: Text(strings.deleteLabel),
           ),
         ],
       ),
@@ -89,9 +92,10 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
+      final strings = AppStrings.of(context);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+      ).showSnackBar(SnackBar(content: Text('${strings.failedToDelete}: $e')));
     }
   }
 
@@ -106,12 +110,13 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
 
     if (didUpdate == true) {
       widget.onDataChanged();
-      _loadData();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+
     if (_isLoading) {
       return const SizedBox(
         height: 200,
@@ -122,7 +127,7 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
     if (_error != null || _transaction == null) {
       return SizedBox(
         height: 200,
-        child: Center(child: Text(_error ?? 'Transaction not found')),
+        child: Center(child: Text(_error ?? strings.transactionNotFound)),
       );
     }
 
@@ -151,18 +156,18 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildHeader(context, tx, isIncome),
+          _buildHeader(tx, isIncome, strings),
           const Divider(height: 32),
           _buildDetailRow(
             context,
-            'Category',
-            tx.category,
+            strings.categoryLabel,
+            _translateCategory(tx.category, context),
             Icons.category_rounded,
           ),
           const SizedBox(height: 12),
           _buildDetailRow(
             context,
-            'Date',
+            strings.exportColumnDate,
             _formatDate(tx.date),
             Icons.calendar_today_rounded,
           ),
@@ -175,7 +180,7 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
           ),
           if (tx.note != null && tx.note!.isNotEmpty) ...[
             const SizedBox(height: 12),
-            _buildDetailRow(context, 'Note', tx.note!, Icons.notes_rounded),
+            _buildDetailRow(context, strings.exportColumnNote, tx.note!, Icons.notes_rounded),
           ],
           const SizedBox(height: 24),
           Row(
@@ -184,7 +189,7 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
                 child: OutlinedButton.icon(
                   onPressed: _delete,
                   icon: const Icon(Icons.delete_outline_rounded),
-                  label: const Text('Delete'),
+                  label: Text(strings.deleteLabel),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.error,
                   ),
@@ -195,7 +200,7 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
                 child: FilledButton.icon(
                   onPressed: _edit,
                   icon: const Icon(Icons.edit_rounded),
-                  label: const Text('Edit'),
+                  label: Text(strings.editLabel),
                 ),
               ),
             ],
@@ -206,9 +211,9 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
   }
 
   Widget _buildHeader(
-    BuildContext context,
     TransactionRecord tx,
     bool isIncome,
+    AppStrings strings,
   ) {
     return Column(
       children: [
@@ -233,7 +238,7 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
         ),
         const SizedBox(height: 4),
         Text(
-          '${isIncome ? '+' : '-'} ${_currency(tx.amount)}',
+          '${isIncome ? '+' : '-'} ${_currency(tx.amount, strings)}',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             color: isIncome ? const Color(0xFF047857) : const Color(0xFFB91C1C),
             fontWeight: FontWeight.w700,
@@ -282,15 +287,15 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
     );
   }
 
-  String _currency(double amount) {
+  String _currency(double amount, AppStrings strings) {
     final value = amount.abs();
     if (value >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(2)}M VND';
+      return '${(amount / 1000000).toStringAsFixed(2)}M${strings.currencySuffix}';
     }
     if (value >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(0)}K VND';
+      return '${(amount / 1000).toStringAsFixed(0)}K${strings.currencySuffix}';
     }
-    return '${amount.toStringAsFixed(0)} VND';
+    return '${amount.toStringAsFixed(0)}${strings.currencySuffix}';
   }
 
   String _formatDate(DateTime date) {
@@ -300,4 +305,20 @@ class _TransactionDetailSheetState extends State<TransactionDetailSheet> {
   String _formatTime(DateTime date) {
     return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
+
+  String _translateCategory(String category, BuildContext context) {
+    if (AppStrings.of(context).language == AppLanguage.vi) {
+      return switch (category) {
+        'Food' => 'Ăn uống',
+        'Housing' => 'Nhà cửa',
+        'Shopping' => 'Mua sắm',
+        'Transport' => 'Di chuyển',
+        _ => category,
+      };
+    }
+    return category;
+  }
+
+  bool _isVi(BuildContext context) =>
+      AppStrings.of(context).language == AppLanguage.vi;
 }

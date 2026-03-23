@@ -2,6 +2,8 @@ import 'package:expense_tracker_app/models/category_record.dart';
 import 'package:expense_tracker_app/models/transaction_record.dart';
 import 'package:expense_tracker_app/services/repository_registry.dart';
 import 'package:flutter/material.dart';
+import '../localization/app_strings.dart';
+import '../widgets/app_preferences_scope.dart';
 
 class EditTransactionScreen extends StatefulWidget {
   const EditTransactionScreen({super.key, required this.transaction});
@@ -131,18 +133,21 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       Navigator.of(context).pop(true); // Return true indicating success
     } catch (e) {
       if (!mounted) return;
+      final strings = AppStrings.of(context);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to update: $e')));
+      ).showSnackBar(SnackBar(content: Text('${strings.failedToUpdateTransaction}: $e')));
       setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Transaction'),
+        title: Text(strings.editTransactionTitle),
         actions: [
           if (_isSaving)
             const Padding(
@@ -156,7 +161,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           else
             IconButton(
               icon: const Icon(Icons.check_rounded),
-              tooltip: 'Save',
+              tooltip: strings.saveLabel,
               onPressed: _save,
             ),
         ],
@@ -171,16 +176,16 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SegmentedButton<TransactionType>(
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: TransactionType.expense,
-                          label: Text('Expense'),
-                          icon: Icon(Icons.trending_down_rounded),
+                          label: Text(strings.transactionsTabExpense),
+                          icon: const Icon(Icons.trending_down_rounded),
                         ),
                         ButtonSegment(
                           value: TransactionType.income,
-                          label: Text('Income'),
-                          icon: Icon(Icons.trending_up_rounded),
+                          label: Text(strings.transactionsTabIncome),
+                          icon: const Icon(Icons.trending_up_rounded),
                         ),
                       ],
                       selected: {_type},
@@ -194,18 +199,18 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _amountController,
-                      decoration: const InputDecoration(
-                        labelText: 'Amount (VND)',
-                        prefixIcon: Icon(Icons.attach_money_rounded),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: '${strings.amountLabel} (${strings.currencySuffix.trim()})',
+                        prefixIcon: const Icon(Icons.attach_money_rounded),
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter an amount';
+                          return strings.pleaseEnterAmount;
                         }
                         if (double.tryParse(value.trim()) == null) {
-                          return 'Invalid amount';
+                          return strings.invalidAmount;
                         }
                         return null;
                       },
@@ -213,14 +218,14 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Title / Content',
-                        prefixIcon: Icon(Icons.title_rounded),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: strings.titleLabel,
+                        prefixIcon: const Icon(Icons.title_rounded),
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a title';
+                          return strings.pleaseEnterTitle;
                         }
                         return null;
                       },
@@ -228,30 +233,30 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       initialValue: _selectedCategory,
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
-                        prefixIcon: Icon(Icons.category_rounded),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: strings.categoryLabel,
+                        prefixIcon: const Icon(Icons.category_rounded),
+                        border: const OutlineInputBorder(),
                       ),
                       items: _allCategories
                           .where((c) => c.type == _type)
                           .map(
                             (c) => DropdownMenuItem(
                               value: c.name,
-                              child: Text(c.name),
+                              child: Text(_translateCategory(c.name, context)),
                             ),
                           )
                           .toList(),
                       onChanged: (val) =>
                           setState(() => _selectedCategory = val),
                       validator: (value) =>
-                          value == null ? 'Please select a category' : null,
+                          value == null ? strings.pleaseSelectCategory : null,
                     ),
                     const SizedBox(height: 16),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.calendar_today_rounded),
-                      title: const Text('Date & Time'),
+                      title: Text(strings.dateTimeLabel),
                       subtitle: Text(
                         '${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year} '
                         '${_date.hour.toString().padLeft(2, '0')}:${_date.minute.toString().padLeft(2, '0')}',
@@ -262,10 +267,10 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                     const Divider(height: 24),
                     TextFormField(
                       controller: _noteController,
-                      decoration: const InputDecoration(
-                        labelText: 'Note (Optional)',
-                        prefixIcon: Icon(Icons.notes_rounded),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: strings.noteOptionalLabel,
+                        prefixIcon: const Icon(Icons.notes_rounded),
+                        border: const OutlineInputBorder(),
                       ),
                       maxLines: 3,
                     ),
@@ -275,9 +280,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text(
-                        'Save Changes',
-                        style: TextStyle(fontSize: 16),
+                      child: Text(
+                        strings.saveBudgets,
+                        style: const TextStyle(fontSize: 16),
                       ),
                     ),
                   ],
@@ -285,5 +290,18 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
               ),
             ),
     );
+  }
+
+  String _translateCategory(String category, BuildContext context) {
+    if (AppStrings.of(context).language == AppLanguage.vi) {
+      return switch (category) {
+        'Food' => 'Ăn uống',
+        'Housing' => 'Nhà cửa',
+        'Shopping' => 'Mua sắm',
+        'Transport' => 'Di chuyển',
+        _ => category,
+      };
+    }
+    return category;
   }
 }

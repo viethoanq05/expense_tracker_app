@@ -92,8 +92,8 @@ class _AppShellScreenState extends State<AppShellScreen> {
       body: IndexedStack(
         index: _navigationController.currentIndex,
         children: [
-          const DashboardScreen(),
-          const TransactionsScreen(),
+          DashboardScreen(refreshNotifier: _refreshNotifier),
+          TransactionsScreen(refreshNotifier: _refreshNotifier),
           const BudgetScreen(),
           SettingsScreen(onBudgetSaved: _handleBudgetSaved),
         ],
@@ -108,7 +108,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
             _refreshNotifier.value++;
           }
         },
-        tooltip: 'Add transaction',
+        tooltip: strings.addTransactionTooltip,
         child: const Icon(Icons.add_rounded),
       ),
       bottomNavigationBar: BottomAppBar(
@@ -230,8 +230,8 @@ class _AppShellScreenState extends State<AppShellScreen> {
             child: IndexedStack(
               index: _navigationController.currentIndex,
               children: [
-                const DashboardScreen(),
-                const TransactionsScreen(),
+                DashboardScreen(refreshNotifier: _refreshNotifier),
+                TransactionsScreen(refreshNotifier: _refreshNotifier),
                 const BudgetScreen(),
                 SettingsScreen(onBudgetSaved: _handleBudgetSaved),
               ],
